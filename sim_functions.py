@@ -1,0 +1,128 @@
+import random
+import re
+
+# Function to simulate a dice roll with a specified number of sides.
+def roll(num_sides = 6):
+    return random.randint(1, num_sides)
+
+# Check if the input is a string representing a dice roll or a numeric value
+# and roll the dice accordingly. If it's a numeric value, return it as is.
+def check_and_roll_numeric(dice):
+    if isinstance(dice, str):
+        if re.match(r'^d(\d+)$', dice):
+            num_sides = int(re.search(r'(\d+)', dice).group(1))
+            result = roll(num_sides)
+            return result
+        elif re.match(r'^(\d+)d(\d+)([+-]\d+)?$', dice):
+            match = re.search(r'(\d+)d(\d+)([+-]\d+)?', dice)
+            num_dice = int(match.group(1))
+            num_sides = int(match.group(2))
+            modifier = int(match.group(3)) if match.group(3) else 0
+            result = sum(roll(num_sides) for _ in range(num_dice)) + modifier
+            return result
+        elif dice.isnumeric():
+            return int(dice)
+    else:
+        return dice
+
+# Calculate the number of successes based on the number of dice rolled,
+# the success threshold, and various reroll options.
+def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones = False, crit_value = 6):
+    total = 0
+    ones = 0
+    reroll_total = 0
+    crits = 0
+    reroll_crits = 0
+    if success == 0:
+        return dice
+    
+    for _ in range(dice):
+        result = roll()
+        #ignore tracking ones and crits on saves
+        if result == 1 and not invert:
+            ones += 1
+        if result >= crit_value and not invert:
+            crits += 1
+            
+        #not saves
+        if not invert and not result == 1 and (result >= success or result >= crit_value):
+            total += 1
+        #is save
+        elif invert and result < success:
+            total += 1
+            
+    if reroll_all:
+        reroll_total, reroll_crits = calc_success(dice - total, success, invert, crit_value = crit_value)
+    elif reroll_ones:
+        reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
+    
+    return reroll_total + total, crits + reroll_crits
+
+def calc_to_wound(strength, toughness, plus_wound = False):
+    if strength == 0:
+        return 0
+    if toughness == 0:
+        return 0
+    
+    if plus_wound:
+        modifier = -1
+    else:
+        modifier = 0
+    
+    ts_ratio = toughness / strength
+    if ts_ratio >= 2:
+        return 6 + modifier
+    if ts_ratio < 2 and ts_ratio > 1:
+        return 5 + modifier
+    if ts_ratio == 1:
+        return 4 + modifier
+    if ts_ratio < 1 and ts_ratio > 0.5:
+        return 3 + modifier
+    if ts_ratio <= 0.5:
+        # wound cannot be better than 2
+        return 2
+
+def calc_attacks(total_attacks):
+    return check_and_roll_numeric(total_attacks)
+
+def calc_sustained_hits(crits, sustained_hits):
+    extra_hits = 0
+    for _ in range(crits):
+        extra_hits += check_and_roll_numeric(sustained_hits)
+    
+    average_sustained = extra_hits / crits if crits > 0 else 0
+    return extra_hits, average_sustained
+
+def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6):
+    return calc_success(atk, score, False, reroll_hit, reroll_hit_one, crit_hit)
+
+def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6):
+    return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, crit_wound)
+
+def calc_saves(wounds, save = 0, invuln = 0, ap = 0):
+    final_save = save + ap
+    if final_save > invuln and invuln != 0:
+        final_save = invuln
+        
+    # Your save cannot be better than a 3 unless your base save is already better than 3
+    if final_save < 3 and save <= 2:
+        final_save = 3
+        
+    return calc_success(wounds, final_save, True) 
+
+def calc_damage(amt, damage = 1):
+    total = 0
+    for _ in range(amt):
+        total = total + check_and_roll_numeric(damage)
+        
+    return total
+
+def calc_feel_no_pain(damage, fnp = 0):
+    if fnp <= 0:
+        return damage, 0
+    
+    return calc_success(damage, fnp)
+
+
+def calc_kills(dmg, wounds = 1):
+    return dmg / wounds
