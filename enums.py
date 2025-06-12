@@ -10,3 +10,13 @@ class RerollType(Enum):
     NO_REROLL = 'None'
     REROLL_ONE = 'Reroll Ones'
     REROLL_ALL = 'Reroll All'
+    
+class MinusDamageType(Enum):
+    NO_MINUS = 'None'
+    MINUS_ONE = 'Minus One'
+    MINUS_HALF = 'Minus Half'
+    
+class MinusWoundType(Enum):
+    NO_MINUS = 'None'
+    MINUS_STR_GREATER = 'Minus 1 Wound if Strength Greater'
+    MINUS_ALWAYS = 'Minus 1 Wound'
