@@ -1,5 +1,5 @@
 import tkinter as tk
-from enums import TkType, RerollType
+from enums import TkType, RerollType, MinusDamageType, MinusWoundType
 
 def getAttackerForm():
     attacks_entry = tk.StringVar()
@@ -25,7 +25,7 @@ def getAttackerForm():
         form_data
     )
     
-def getModifiersForm():
+def getAtkModifiersForm():
     mod_reroll_hits_var = tk.StringVar()
     mod_reroll_wounds_var = tk.StringVar()
     mod_sustained_hits_var = tk.StringVar()
@@ -34,12 +34,14 @@ def getModifiersForm():
     mod_devestating_wounds_var = tk.IntVar()
     mod_blast_var = tk.IntVar()
     mod_plus_wound_var = tk.IntVar()
+    mod_plus_hit_var = tk.IntVar()
     attack_crit_hit_entry = tk.IntVar()
     attack_crit_wound_entry = tk.IntVar()
 
     form_data = [
         {"label": "Reroll Hit", "entry": mod_reroll_hits_var, "options": RerollType, "default": RerollType.NO_REROLL.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
         {"label": "Reroll Wound", "entry": mod_reroll_wounds_var, "options": RerollType, "default": RerollType.NO_REROLL.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+        {"label": "+1 Hit", "entry": mod_plus_hit_var, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         {"label": "+1 Wound", "entry": mod_plus_wound_var, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         {"label": "Sustained Hit", "entry": mod_sustained_hits_var, "default": 0, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
         {"label": "Lethal Hit", "entry": mod_lethal_hits_var, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
@@ -58,6 +60,7 @@ def getModifiersForm():
         mod_torrent_var,
         mod_devestating_wounds_var,
         mod_blast_var,
+        mod_plus_hit_var,
         mod_plus_wound_var,
         attack_crit_hit_entry,
         attack_crit_wound_entry,
@@ -89,5 +92,23 @@ def getDefenderForm():
         defend_wounds_entry,
         defend_model_count_entry,
         feel_no_pain_entry,
+        form_data
+    )
+    
+def getDefModifiersForm():
+    mod_minus_damage = tk.StringVar()
+    mod_minus_wound = tk.StringVar()
+    mod_plus_save = tk.IntVar()
+
+    form_data = [
+        {"label": "Damage reduction", "entry": mod_minus_damage, "options": MinusDamageType, "default": MinusDamageType.NO_MINUS.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+        {"label": "Wound reduction", "entry": mod_minus_wound, "options": MinusWoundType, "default": MinusWoundType.NO_MINUS.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+        {"label": "+1 Save", "entry": mod_plus_save, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+    ]
+
+    return (
+        mod_minus_damage,
+        mod_minus_wound,
+        mod_plus_save,
         form_data
     )

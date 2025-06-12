@@ -1,5 +1,6 @@
 import random
 import re
+from enums import MinusDamageType, MinusWoundType
 
 # Function to simulate a dice roll with a specified number of sides.
 def roll(num_sides = 6):
@@ -65,20 +66,31 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     
     return reroll_total + total, crits + reroll_crits
 
-def calc_to_wound(strength, toughness, plus_wound = False):
+def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value):
     if strength == 0:
-        return 0
+        return 6
     if toughness == 0:
         return 0
     
+    # modifiers to wound
+    modifier = 0
     if plus_wound:
+        modifier += -1
+    elif minus_wound == MinusWoundType.MINUS_ALWAYS.value:
+        modifier += 1
+    elif minus_wound == MinusWoundType.MINUS_STR_GREATER.value and strength > toughness:
+        modifier += 1
+        
+    # modifier cannot be better than -1 or worse than 1
+    if modifier > 1:
+        modifier = 1
+    if modifier < -1:
         modifier = -1
-    else:
-        modifier = 0
-    
+
     ts_ratio = toughness / strength
     if ts_ratio >= 2:
-        return 6 + modifier
+        # wound cannot be worse than 6
+        return 6 + modifier if modifier < 0 else 6
     if ts_ratio < 2 and ts_ratio > 1:
         return 5 + modifier
     if ts_ratio == 1:
@@ -87,7 +99,7 @@ def calc_to_wound(strength, toughness, plus_wound = False):
         return 3 + modifier
     if ts_ratio <= 0.5:
         # wound cannot be better than 2
-        return 2
+        return 2 + modifier if modifier > 0 else 2
 
 def calc_attacks(total_attacks):
     return check_and_roll_numeric(total_attacks)
@@ -99,13 +111,22 @@ def calc_sustained_hits(crits, sustained_hits):
     
     return extra_hits
 
-def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6):
+def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False):
+    if plus_hit:
+        score -= 1
+    # to hit cannot be better than 2
+    if score < 2:
+        score = 2
+        
     return calc_success(atk, score, False, reroll_hit, reroll_hit_one, crit_hit)
 
-def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6):
+def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6) -> int:
     return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, crit_wound)
 
-def calc_saves(wounds, save = 0, invuln = 0, ap = 0):
+def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
+    if plus_save and save > 2:
+        save -= 1
+    
     final_save = save + ap
     if final_save > invuln and invuln != 0:
         final_save = invuln
@@ -116,15 +137,20 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0):
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1, return_as_list = False) -> int | list:
+def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
+    # Warhammer calculates damage in order:
+    # Replace -> Division -> Multiplication -> Addition -> Subtraction
+    
+    damage_list = []
     if return_as_list:
-        return [check_and_roll_numeric(damage) for _ in range(amt)]
-    else:
-        total = 0
         for _ in range(amt):
-            total = total + check_and_roll_numeric(damage)
-            
-        return total
+            d = check_and_roll_numeric(damage)
+            if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
+                d -= 1
+            elif minus_damage == MinusDamageType.MINUS_HALF.value:
+                d = -(-d // 2)
+            damage_list.append(d)
+    return damage_list if return_as_list else sum(damage_list)
 
 def calc_feel_no_pain(damage, fnp = 0) -> int | list:
     if fnp > 6 or fnp <= 0:
