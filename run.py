@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
 from enums import TkType, RerollType
-from data import getFormData
+from data import getAttackerForm, getDefenderForm, getModifiersForm
 
 def run_simulation():
     try:
@@ -45,6 +46,8 @@ def run_simulation():
         AVERAGE_FEEL_NO_PAIN = 0
         AVERAGE_SUSTAINED_HITS = 0
         
+        UNITS_WIPED = 0
+        
         AVERAGE_CRIT_HIT = 0
         AVERAGE_CRIT_WOUND = 0
 
@@ -74,11 +77,9 @@ def run_simulation():
                 
                 # calc special crits
                 if MOD_SUSTAINED_HITS != "0":
-                    added_wounds, added_sustained_hits = calc_sustained_hits(crits, MOD_SUSTAINED_HITS)
-                    AVERAGE_SUSTAINED_HITS += added_sustained_hits
-                    AVERAGE_HITS = AVERAGE_HITS + (previous_dice + added_wounds)
-                else:
-                    AVERAGE_HITS += previous_dice
+                    added_wounds = calc_sustained_hits(crits, MOD_SUSTAINED_HITS)
+                    AVERAGE_SUSTAINED_HITS += added_wounds
+                AVERAGE_HITS += previous_dice
                 if MOD_LETHAL_HITS:
                     added_saves = crits
                     previous_dice -= crits
@@ -110,27 +111,26 @@ def run_simulation():
             # calc damage
             previous_dice = calc_damage(
                 amt=previous_dice + added_damage, 
-                damage=ATTACK_DMG)
-            AVERAGE_DAMAGE += previous_dice
-            
+                damage=ATTACK_DMG,
+                return_as_list=True
+            )
+            AVERAGE_DAMAGE += sum(previous_dice)
+
             #calc feel no pain
-            previous_dice, crits = calc_feel_no_pain(
+            previous_dice = calc_feel_no_pain(
                 damage=previous_dice,
                 fnp=FEEL_NO_PAIN
             )
-            AVERAGE_FEEL_NO_PAIN += previous_dice
+            AVERAGE_FEEL_NO_PAIN += sum(previous_dice)
             
             # calc kills
             previous_dice = calc_kills(
-                dmg=previous_dice,
+                dmg_list=previous_dice,
                 wounds=DEFEND_WOUNDS)
             AVERAGE_KILLS += previous_dice
-    
-        # Calculate extra after all simulations
-        is_dead = False
-        
-        if AVERAGE_KILLS / SIMULATIONS >= DEFEND_MODEL_COUNT:
-            is_dead = True
+
+            if previous_dice >= DEFEND_MODEL_COUNT:
+                UNITS_WIPED += 1
             
         # Display results using messagebox
         message = f"with {TO_WOUND} to wound\n"
@@ -148,76 +148,78 @@ def run_simulation():
         else:
             message += f"Hits - {round(AVERAGE_HITS / SIMULATIONS, 2)}\n"
         if MOD_DEVESTATING_WOUNDS:
-            message += f"Wounds - {round(AVERAGE_WOUNDS / SIMULATIONS, 2)} (+{round(AVERAGE_CRIT_WOUND / SIMULATIONS, 2)} crits)\n"
+            message += f"Wounds - {round(AVERAGE_WOUNDS / SIMULATIONS, 2)} ({round(AVERAGE_CRIT_WOUND / SIMULATIONS, 2)} Dev)\n"
         else:
             message += f"Wounds - {round(AVERAGE_WOUNDS / SIMULATIONS, 2)}\n"
         message += f"Failed Saves - {round(AVERAGE_SAVES / SIMULATIONS, 2)}\n"
         message += f"Damage - {round(AVERAGE_DAMAGE / SIMULATIONS, 2)}\n"
         if FEEL_NO_PAIN:
-            message += f"Feel no pain - {round(AVERAGE_FEEL_NO_PAIN / SIMULATIONS, 2)}\n"
+            message += f"Damage after FNP - {round(AVERAGE_FEEL_NO_PAIN / SIMULATIONS, 2)}\n"
         message += f"Kills - {round(AVERAGE_KILLS / SIMULATIONS, 2)}\n"
-        if is_dead:
+        if UNITS_WIPED > 0:
             message += "-------------\n"
-            message += "Defender is dead!\n"
+            message += f"Percent chance unit dies - {round(UNITS_WIPED / SIMULATIONS * 100, 2)}%\n"
         messagebox.showinfo("Simulation Results", message)
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {str(e)}")
         print(f"Line: {e.__traceback__.tb_lineno} - {str(e)}")
-        
+
+def build_form(fields, target_frame):
+    # Build the form dynamically
+    for field in fields:
+        needs_label = True
+
+        if field["type"] == TkType.ENTRY:
+            if "default" in field:
+                field['entry'].set(field['default'])
+            entry = tk.Entry(target_frame, textvariable=field['entry'])
+
+        elif field["type"] == TkType.CHECKBUTTON:
+            if "default" in field:
+                field['entry'].set(field['default'])
+            entry = tk.Checkbutton(target_frame, text=field['label'], variable=field['entry'])
+            needs_label = False
+
+        elif field["type"] == TkType.OPTIONMENU:
+            field['entry'].set(field["default"])
+            options = [opt.value for opt in RerollType]
+            entry = tk.OptionMenu(target_frame, field['entry'], *options)
+
+        if needs_label:
+            label = tk.Label(target_frame, text=field['label'])
+            label_style = field.get('label_style', field.get('style', {}))
+            label.grid(**label_style)
+
+        entry_style = field.get('entry_style', field.get('style', {}))
+        entry.grid(**entry_style)
+
 # Create a Tkinter window
 window = tk.Tk()
 window.title("Warhammer Combat Simulator")
 
-#order matters
-(attacks_entry,
-attack_score_entry,
-mod_torrent_var,
-attack_strength_entry,
-attack_ap_entry,
-attack_dmg_entry,
-mod_reroll_hits_var,
-mod_reroll_wounds_var,
-mod_sustained_hits_var,
-mod_lethal_hits_var,
-attack_crit_hit_entry,
-mod_devestating_wounds_var,
-mod_blast_var,
-mod_plus_wound_var,
-attack_crit_wound_entry,
-defend_toughness_entry,
-defend_save_entry,
-defend_invuln_entry,
-defend_wounds_entry,
-defend_model_count_entry,
-feel_no_pain_entry,
-form_fields) = getFormData()
+# Create frames for grouping
+attacker_frame = ttk.LabelFrame(window, text="Attacker")
+attacker_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nw')
 
-for field in form_fields:
-    needs_label = True
-    if field["type"] == TkType.ENTRY:
-        if "default" in field:
-            field['entry'].set(field['default'])
-        entry = tk.Entry(window, textvariable=field['entry'])
-    elif field["type"] == TkType.CHECKBUTTON:
-        if "default" in field:
-            field['entry'].set(field['default'])
-        entry = tk.Checkbutton(window, text=field['label'], variable=field['entry'])
-        needs_label = False
-    elif field["type"] == TkType.OPTIONMENU:
-        field['entry'].set(field["default"])
-        options = [field['options'].value for field['options'] in RerollType]
-        entry = tk.OptionMenu(window, field['entry'], *options)
-        
-    if needs_label:
-        label = tk.Label(window, text=field['label'])
-        label_style = field.get('label_style', field.get('style', {}))
-        label.grid(**label_style)
-    
-    entry_style = field.get('entry_style', field.get('style', {}))
-    entry.grid(**entry_style)
+modifier_frame = ttk.LabelFrame(window, text="Modifiers")
+modifier_frame.grid(row=0, column=1, padx=10, pady=10, sticky='nw')
 
+defender_frame = ttk.LabelFrame(window, text="Defender")
+defender_frame.grid(row=0, column=2, padx=10, pady=10, sticky='ne')
+
+#get form data and build GUI
+(attacks_entry, attack_score_entry, attack_strength_entry, attack_ap_entry, attack_dmg_entry, attack_form_data) = getAttackerForm()
+build_form(attack_form_data, attacker_frame)
+
+(mod_reroll_hits_var, mod_reroll_wounds_var, mod_sustained_hits_var, mod_lethal_hits_var, mod_torrent_var, mod_devestating_wounds_var, mod_blast_var, mod_plus_wound_var, attack_crit_hit_entry, attack_crit_wound_entry, modifier_form_data) = getModifiersForm()
+build_form(modifier_form_data, modifier_frame)
+
+(defend_toughness_entry, defend_save_entry, defend_invuln_entry, defend_wounds_entry, defend_model_count_entry, feel_no_pain_entry, defender_form_data) = getDefenderForm()
+build_form(defender_form_data, defender_frame)
+
+# Add simulation button
 run_button = tk.Button(window, text="Run Simulation", command=run_simulation)
-run_button.grid()
+run_button.grid(row=1, column=2, columnspan=2, pady=10)
 
-# Run the Tkinter main loop
+# Start Tkinter main loop
 window.mainloop()

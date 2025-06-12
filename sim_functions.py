@@ -27,7 +27,14 @@ def check_and_roll_numeric(dice):
 
 # Calculate the number of successes based on the number of dice rolled,
 # the success threshold, and various reroll options.
-def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones = False, crit_value = 6):
+## Parameters:
+# - dice: Number of dice to roll.
+# - success: The success threshold (minimum value to count as a success).
+# - invert: If True, counts rolls below the success threshold as successes.
+# - reroll_all: If True, rerolls all dice that did not succeed.
+# - reroll_ones: If True, rerolls only the dice that rolled a one.
+# - crit_value: The value that counts as a critical success (default is 6).
+def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones = False, crit_value = 6) -> tuple[int, int]:
     total = 0
     ones = 0
     reroll_total = 0
@@ -90,8 +97,7 @@ def calc_sustained_hits(crits, sustained_hits):
     for _ in range(crits):
         extra_hits += check_and_roll_numeric(sustained_hits)
     
-    average_sustained = extra_hits / crits if crits > 0 else 0
-    return extra_hits, average_sustained
+    return extra_hits
 
 def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6):
     return calc_success(atk, score, False, reroll_hit, reroll_hit_one, crit_hit)
@@ -110,19 +116,39 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0):
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1):
-    total = 0
-    for _ in range(amt):
-        total = total + check_and_roll_numeric(damage)
-        
-    return total
+def calc_damage(amt, damage = 1, return_as_list = False) -> int | list:
+    if return_as_list:
+        return [check_and_roll_numeric(damage) for _ in range(amt)]
+    else:
+        total = 0
+        for _ in range(amt):
+            total = total + check_and_roll_numeric(damage)
+            
+        return total
 
-def calc_feel_no_pain(damage, fnp = 0):
-    if fnp <= 0:
-        return damage, 0
-    
-    return calc_success(damage, fnp)
+def calc_feel_no_pain(damage, fnp = 0) -> int | list:
+    if fnp > 6 or fnp <= 0:
+        return damage
+    if fnp == 1:
+        if isinstance(damage, list):
+            return [0 for _ in damage]
+        return 0
+
+    if isinstance(damage, list):
+        return [calc_success(d, fnp, True)[0] for d in damage]
+    else:
+        dmg, _ = calc_success(damage, fnp, True)
+        return dmg
 
 
-def calc_kills(dmg, wounds = 1):
-    return dmg / wounds
+def calc_kills(dmg_list: list = [], wounds = 1):
+    kills = 0
+    current_wound = wounds
+    for dmg in dmg_list:
+        if dmg >= current_wound:
+            kills += 1
+            current_wound = wounds
+        else:
+            current_wound -= dmg
+
+    return kills
