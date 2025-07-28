@@ -2,6 +2,11 @@ import random
 import re
 from enums import MinusDamageType, MinusWoundType
 
+SHORTHAND_NOTATION = r'^d(\d+)$'
+DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
+def has_notation(dice):
+    return bool(re.match(SHORTHAND_NOTATION, dice) or re.match(DIE_NOTATION, dice))
+
 # Function to simulate a dice roll with a specified number of sides.
 def roll(num_sides = 6):
     return random.randint(1, num_sides)
@@ -9,22 +14,20 @@ def roll(num_sides = 6):
 # Check if the input is a string representing a dice roll or a numeric value
 # and roll the dice accordingly. If it's a numeric value, return it as is.
 def check_and_roll_numeric(dice):
-    if isinstance(dice, str):
-        if re.match(r'^d(\d+)$', dice):
+    if has_notation(dice):
+        if re.match(SHORTHAND_NOTATION, dice):
             num_sides = int(re.search(r'(\d+)', dice).group(1))
             result = roll(num_sides)
             return result
-        elif re.match(r'^(\d+)d(\d+)([+-]\d+)?$', dice):
-            match = re.search(r'(\d+)d(\d+)([+-]\d+)?', dice)
+        elif re.match(DIE_NOTATION, dice):
+            match = re.search(DIE_NOTATION, dice)
             num_dice = int(match.group(1))
             num_sides = int(match.group(2))
             modifier = int(match.group(3)) if match.group(3) else 0
             result = sum(roll(num_sides) for _ in range(num_dice)) + modifier
             return result
-        elif dice.isnumeric():
-            return int(dice)
     else:
-        return dice
+        return int(dice) if isinstance(dice, str) and dice.isnumeric() else dice
 
 # Calculate the number of successes based on the number of dice rolled,
 # the success threshold, and various reroll options.
@@ -142,14 +145,30 @@ def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDam
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     
     damage_list = []
+    find_highest = False
+    highest = 0
+    
+    if minus_damage == MinusDamageType.NULL_ONE.value:
+        if has_notation(damage):
+            find_highest = True
+        else:
+            amt -= 1
+
     if return_as_list:
         for _ in range(amt):
             d = check_and_roll_numeric(damage)
+            if find_highest:
+                if d > highest:
+                    highest = d
             if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
                 d -= 1
             elif minus_damage == MinusDamageType.MINUS_HALF.value:
                 d = -(-d // 2)
             damage_list.append(d)
+            
+    if find_highest:
+        damage_list.remove(highest)
+        
     return damage_list if return_as_list else sum(damage_list)
 
 def calc_feel_no_pain(damage, fnp = 0) -> int | list:
