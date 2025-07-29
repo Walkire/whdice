@@ -15,6 +15,7 @@ class MinusDamageType(Enum):
     NO_MINUS = 'None'
     MINUS_ONE = 'Minus One'
     MINUS_HALF = 'Minus Half'
+    NULL_ONE = 'Null One'
     
 class MinusWoundType(Enum):
     NO_MINUS = 'None'
