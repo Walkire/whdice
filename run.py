@@ -4,6 +4,9 @@ from tkinter import ttk
 from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
 from enums import TkType, RerollType, MinusDamageType, MinusWoundType
 from data import getAttackerForm, getDefenderForm, getAtkModifiersForm, getDefModifiersForm
+from save import save
+
+ATTACKERS = []
 
 def run_simulation():
     try:
@@ -59,7 +62,7 @@ def run_simulation():
 
         TO_WOUND = calc_to_wound(ATTACK_STRENGTH, DEFEND_TOUGHNESS, PLUS_WOUND, MOD_MINUS_WOUND)
         previous_dice = 0
-        
+
         for _ in range(SIMULATIONS):
             added_saves = 0
             added_wounds = 0
@@ -179,30 +182,33 @@ def build_form(fields, target_frame):
     # Build the form dynamically
     for field in fields:
         needs_label = True
+        try:
+            if field["type"] == TkType.ENTRY:
+                if "default" in field:
+                    field['entry'].set(field['default'])
+                entry = tk.Entry(target_frame, textvariable=field['entry'])
 
-        if field["type"] == TkType.ENTRY:
-            if "default" in field:
-                field['entry'].set(field['default'])
-            entry = tk.Entry(target_frame, textvariable=field['entry'])
+            elif field["type"] == TkType.CHECKBUTTON:
+                if "default" in field:
+                    field['entry'].set(field['default'])
+                entry = tk.Checkbutton(target_frame, text=field['label'], variable=field['entry'])
+                needs_label = False
 
-        elif field["type"] == TkType.CHECKBUTTON:
-            if "default" in field:
-                field['entry'].set(field['default'])
-            entry = tk.Checkbutton(target_frame, text=field['label'], variable=field['entry'])
-            needs_label = False
+            elif field["type"] == TkType.OPTIONMENU:
+                field['entry'].set(field["default"])
+                options = [opt.value for opt in field["options"]]
+                entry = tk.OptionMenu(target_frame, field['entry'], *options)
 
-        elif field["type"] == TkType.OPTIONMENU:
-            field['entry'].set(field["default"])
-            options = [opt.value for opt in field["options"]]
-            entry = tk.OptionMenu(target_frame, field['entry'], *options)
+            if needs_label:
+                label = tk.Label(target_frame, text=field['label'])
+                label_style = field.get('label_style', field.get('style', {}))
+                label.grid(**label_style)
 
-        if needs_label:
-            label = tk.Label(target_frame, text=field['label'])
-            label_style = field.get('label_style', field.get('style', {}))
-            label.grid(**label_style)
-
-        entry_style = field.get('entry_style', field.get('style', {}))
-        entry.grid(**entry_style)
+            entry_style = field.get('entry_style', field.get('style', {}))
+            entry.grid(**entry_style)
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred while building the form: {str(e)}")
+            print(f"Line: {e.__traceback__.tb_lineno} - {str(e)}")
 
 # Create a Tkinter window
 window = tk.Tk()
@@ -221,6 +227,9 @@ defender_frame.grid(row=0, column=2, padx=10, pady=10, sticky='ne')
 defender_mod_frame = ttk.LabelFrame(window, text="Defender Modifiers")
 defender_mod_frame.grid(row=0, column=3, padx=10, pady=10, sticky='ne')
 
+simulation_frame = ttk.LabelFrame(window, text="Simulations")
+simulation_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='nw')
+
 #get form data and build GUI
 (attacks_entry, attack_score_entry, attack_strength_entry, attack_ap_entry, attack_dmg_entry, attack_form_data) = getAttackerForm()
 build_form(attack_form_data, attacker_frame)
@@ -234,9 +243,17 @@ build_form(defender_form_data, defender_frame)
 (mod_minus_damage_var, mod_minus_wound_var, mod_plus_save_var, defender_mod_form_data) = getDefModifiersForm()
 build_form(defender_mod_form_data, defender_mod_frame)
 
+def save_attacker():
+    build_form(ATTACKERS, simulation_frame)
+
 # Add simulation button
 run_button = tk.Button(window, text="Run Simulation", command=run_simulation)
 run_button.grid(row=1, column=3, columnspan=2, pady=10)
+
+save_button = tk.Button(window, text="Save", command=save_attacker)
+save_button.grid(row=1, column=2, columnspan=1, pady=10)
+
+draw_form()
 
 # Start Tkinter main loop
 window.mainloop()
