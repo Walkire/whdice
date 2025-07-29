@@ -145,29 +145,19 @@ def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDam
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     
     damage_list = []
-    find_highest = False
-    highest = 0
     
     if minus_damage == MinusDamageType.NULL_ONE.value:
-        if has_notation(damage):
-            find_highest = True
-        else:
-            amt -= 1
+        amt -= 1
 
+    # Simulate all damage rolls and modify them as needed
     if return_as_list:
         for _ in range(amt):
             d = check_and_roll_numeric(damage)
-            if find_highest:
-                if d > highest:
-                    highest = d
             if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
                 d -= 1
             elif minus_damage == MinusDamageType.MINUS_HALF.value:
                 d = -(-d // 2)
             damage_list.append(d)
-            
-    if find_highest:
-        damage_list.remove(highest)
         
     return damage_list if return_as_list else sum(damage_list)
 
