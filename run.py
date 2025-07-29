@@ -2,31 +2,18 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
 from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
-from enums import TkType, RerollType, MinusDamageType, MinusWoundType
-from data import getAttackerForm, getDefenderForm, getAtkModifiersForm, getDefModifiersForm
-from utils import build_form
+from enums import RerollType
 from classes.attacker import Attacker
+from classes.defender import Defender
 
 ATTACKER = None
+DEFENDER = None
 SIMULATIONS = 100000
 
 def run_simulation():
     try:
-        if not ATTACKER:
-            raise Exception("No attacker data was found")
-        
-        #DEFENDER
-        DEFEND_TOUGHNESS = int(defend_toughness_entry.get() or 0)
-        DEFEND_SAVE = int(defend_save_entry.get() or 0)
-        DEFEND_INVULN = int(defend_invuln_entry.get() or 0)
-        DEFEND_WOUNDS = int(defend_wounds_entry.get() or 1)
-        FEEL_NO_PAIN = int(feel_no_pain_entry.get() or 0)
-        DEFEND_MODEL_COUNT = int(defend_model_count_entry.get() or 1)
-        
-        # DEFENDER MODIFIERS
-        MOD_MINUS_DAMAGE = mod_minus_damage_var.get() or MinusDamageType.NO_MINUS
-        MOD_MINUS_WOUND = mod_minus_wound_var.get() or MinusWoundType.NO_MINUS.value
-        MOD_PLUS_SAVE = mod_plus_save_var.get() or False
+        if not ATTACKER or not DEFENDER:
+            raise Exception("No unit data was found")
 
         #VARS
         # Used for final average calculations
@@ -44,7 +31,7 @@ def run_simulation():
         AVERAGE_CRIT_HIT = 0
         AVERAGE_CRIT_WOUND = 0
 
-        TO_WOUND = calc_to_wound(ATTACKER.strength, DEFEND_TOUGHNESS, ATTACKER.plus_wound.get(), MOD_MINUS_WOUND)
+        TO_WOUND = calc_to_wound(ATTACKER.strength, DEFENDER.toughness, ATTACKER.plus_wound, DEFENDER.minus_wound)
         previous_dice = 0
         
         for _ in range(SIMULATIONS):
@@ -55,7 +42,7 @@ def run_simulation():
             # calc attacks
             previous_dice = calc_attacks(ATTACKER.attacks)
             if ATTACKER.blast:
-                    previous_dice += int((DEFEND_MODEL_COUNT / 5) // 1)
+                    previous_dice += int((DEFENDER.model_count / 5) // 1)
             AVERAGE_ATTACKS += previous_dice
             
             # calc hits
@@ -97,10 +84,10 @@ def run_simulation():
             # calc save
             previous_dice, crits = calc_saves(
                 wounds=previous_dice + added_saves, 
-                save=DEFEND_SAVE, 
-                invuln=DEFEND_INVULN, 
+                save=DEFENDER.save, 
+                invuln=DEFENDER.invuln, 
                 ap=ATTACKER.ap,
-                plus_save=MOD_PLUS_SAVE
+                plus_save=DEFENDER.plus_save
             )
             AVERAGE_SAVES += previous_dice
             
@@ -109,24 +96,24 @@ def run_simulation():
                 amt=previous_dice + added_damage, 
                 damage=ATTACKER.damage,
                 return_as_list=True,
-                minus_damage=MOD_MINUS_DAMAGE
+                minus_damage=DEFENDER.minus_damage
             )
             AVERAGE_DAMAGE += sum(previous_dice)
 
             #calc feel no pain
             previous_dice = calc_feel_no_pain(
                 damage=previous_dice,
-                fnp=FEEL_NO_PAIN
+                fnp=DEFENDER.feel_no_pain
             )
             AVERAGE_FEEL_NO_PAIN += sum(previous_dice)
             
             # calc kills
             previous_dice = calc_kills(
                 dmg_list=previous_dice,
-                wounds=DEFEND_WOUNDS)
+                wounds=DEFENDER.wounds)
             AVERAGE_KILLS += previous_dice
 
-            if previous_dice >= DEFEND_MODEL_COUNT:
+            if previous_dice >= DEFENDER.model_count:
                 UNITS_WIPED += 1
             
         # Display results using messagebox
@@ -150,9 +137,9 @@ def run_simulation():
             message += f"Wounds - {round(AVERAGE_WOUNDS / SIMULATIONS, 2)}\n"
         message += f"Failed Saves - {round(AVERAGE_SAVES / SIMULATIONS, 2)}\n"
         message += f"Damage - {round(AVERAGE_DAMAGE / SIMULATIONS, 2)}\n"
-        if FEEL_NO_PAIN:
+        if DEFENDER.feel_no_pain:
             message += f"Damage after FNP - {round(AVERAGE_FEEL_NO_PAIN / SIMULATIONS, 2)}\n"
-        if DEFEND_MODEL_COUNT > 1:
+        if DEFENDER.model_count > 1:
             message += f"Kills - {round(AVERAGE_KILLS / SIMULATIONS, 2)}\n"
         if UNITS_WIPED > 0:
             message += "-------------\n"
@@ -179,16 +166,8 @@ defender_frame.grid(row=0, column=2, padx=10, pady=10, sticky='ne')
 defender_mod_frame = ttk.LabelFrame(window, text="Defender Modifiers")
 defender_mod_frame.grid(row=0, column=3, padx=10, pady=10, sticky='ne')
 
-print("Main Before:",attacker_frame)
-print("Mod Before:",attacker_mod_frame)
 ATTACKER = Attacker(attacker_frame, attacker_mod_frame)
-
-#get form data and build GUI
-(defend_toughness_entry, defend_save_entry, defend_invuln_entry, defend_wounds_entry, defend_model_count_entry, feel_no_pain_entry, defender_form_data) = getDefenderForm()
-build_form(defender_form_data, defender_frame)
-
-(mod_minus_damage_var, mod_minus_wound_var, mod_plus_save_var, defender_mod_form_data) = getDefModifiersForm()
-build_form(defender_mod_form_data, defender_mod_frame)
+DEFENDER = Defender(defender_frame, defender_mod_frame)
 
 # Add simulation button
 run_button = tk.Button(window, text="Run Simulation", command=run_simulation)

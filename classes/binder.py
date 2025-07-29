@@ -1,8 +1,8 @@
 import tkinter as tk
 
 class TinkerBinder:
-    def __init__(self, var_type, value=None, frame=None):
-        self._var = var_type(master=frame)
+    def __init__(self, var_type, value=None):
+        self._var = var_type()
         if value is not None:
             self._var.set(value)
 

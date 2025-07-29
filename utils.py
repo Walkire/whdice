@@ -11,19 +11,13 @@ def build_form(fields, target_frame):
         needs_label = True
 
         if field["type"] == TkType.ENTRY:
-            if "default" in field:
-                field['entry'].set(field['default'])
             entry = tk.Entry(target_frame, textvariable=get_var(field['entry']))
 
         elif field["type"] == TkType.CHECKBUTTON:
-            if "default" in field:
-                field['entry'].set(field['default'])
             entry = tk.Checkbutton(target_frame, text=field['label'], variable=get_var(field['entry']))
             needs_label = False
 
         elif field["type"] == TkType.OPTIONMENU:
-            if "default" in field:
-                field['entry'].set(field["default"])
             options = [opt.value for opt in field["options"]]
             entry = tk.OptionMenu(target_frame, get_var(field['entry']), *options)
 

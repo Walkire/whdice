@@ -5,19 +5,17 @@ from classes.binder import TinkerBinder
 
 class Attacker:
     def __init__(self, main_frame, mod_frame):
-        print("Main:", main_frame)
-        print("Main:", mod_frame)
-        self.attacks = TinkerBinder(tk.StringVar, value="1", frame=main_frame)
+        self.attacks = TinkerBinder(tk.StringVar, value="1")
         self.score = TinkerBinder(tk.IntVar, value=0)
         self.strength = TinkerBinder(tk.IntVar,value=0)
         self.ap = TinkerBinder(tk.IntVar, value=0)
-        self.damage = TinkerBinder(tk.StringVar, value="2", frame=main_frame)
+        self.damage = TinkerBinder(tk.StringVar, value="2")
         self.critical_hit = TinkerBinder(tk.IntVar, value=6)
         self.critical_wound = TinkerBinder(tk.IntVar, value=6)
 
         self.torrent = TinkerBinder(tk.IntVar, value=False)
-        self.reroll_hits = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL)
-        self.reroll_wounds = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL)
+        self.reroll_hits = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL.value)
+        self.reroll_wounds = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL.value)
         self.sustained_hits = TinkerBinder(tk.StringVar, value="0")
         self.lethal_hits = TinkerBinder(tk.IntVar, value=False)
         self.devestating_wounds = TinkerBinder(tk.IntVar, value=False)
