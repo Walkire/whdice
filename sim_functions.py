@@ -143,7 +143,6 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
 def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
-    
     damage_list = []
     
     if minus_damage == MinusDamageType.NULL_ONE.value:
