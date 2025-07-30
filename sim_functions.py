@@ -1,6 +1,7 @@
 import random
 import re
 from enums import MinusDamageType, MinusWoundType
+from classes.binder import TinkerBinder
 
 SHORTHAND_NOTATION = r'^d(\d+)$'
 DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
@@ -14,6 +15,9 @@ def roll(num_sides = 6):
 # Check if the input is a string representing a dice roll or a numeric value
 # and roll the dice accordingly. If it's a numeric value, return it as is.
 def check_and_roll_numeric(dice):
+    if isinstance(dice, TinkerBinder):
+        dice = str(dice)
+
     if has_notation(dice):
         if re.match(SHORTHAND_NOTATION, dice):
             num_sides = int(re.search(r'(\d+)', dice).group(1))
@@ -69,11 +73,11 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     
     return reroll_total + total, crits + reroll_crits
 
-def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value):
+def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value) -> int:
     if strength == 0:
         return 6
     if toughness == 0:
-        return 0
+        return 2
     
     # modifiers to wound
     modifier = 0
