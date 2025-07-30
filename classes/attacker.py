@@ -5,10 +5,10 @@ from classes.binder import TinkerBinder
 
 class Attacker:
     def __init__(self, main_frame, mod_frame):
-        self.attacks = TinkerBinder(tk.StringVar, value="1")
-        self.score = TinkerBinder(tk.IntVar, value=0)
-        self.strength = TinkerBinder(tk.IntVar,value=0)
-        self.ap = TinkerBinder(tk.IntVar, value=0)
+        self.attacks = TinkerBinder(tk.StringVar, value="6")
+        self.score = TinkerBinder(tk.IntVar, value=3)
+        self.strength = TinkerBinder(tk.IntVar,value=5)
+        self.ap = TinkerBinder(tk.IntVar, value=1)
         self.damage = TinkerBinder(tk.StringVar, value="2")
         self.critical_hit = TinkerBinder(tk.IntVar, value=6)
         self.critical_wound = TinkerBinder(tk.IntVar, value=6)
