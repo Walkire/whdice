@@ -151,7 +151,7 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
+def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
@@ -160,14 +160,13 @@ def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDam
         amt -= 1
 
     # Simulate all damage rolls and modify them as needed
-    if return_as_list:
-        for _ in range(amt):
-            d = check_and_roll_numeric(damage)
-            if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
-                d -= 1
-            elif minus_damage == MinusDamageType.MINUS_HALF.value:
-                d = -(-d // 2)
-            damage_list.append(d)
+    for _ in range(amt):
+        d = check_and_roll_numeric(damage)
+        if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
+            d -= 1
+        elif minus_damage == MinusDamageType.MINUS_HALF.value:
+            d = -(-d // 2)
+        damage_list.append(d)
         
     return damage_list if return_as_list else sum(damage_list)
 
