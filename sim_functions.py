@@ -1,11 +1,13 @@
 import random
 import re
 from enums import MinusDamageType, MinusWoundType
+from classes.binder import TinkerBinder
 
 SHORTHAND_NOTATION = r'^d(\d+)$'
 DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
 def has_notation(dice):
-    return bool(re.match(SHORTHAND_NOTATION, dice) or re.match(DIE_NOTATION, dice))
+    if isinstance(dice, int): return False
+    return bool(re.match(SHORTHAND_NOTATION, dice, re.IGNORECASE) or re.match(DIE_NOTATION, dice, re.IGNORECASE))
 
 # Function to simulate a dice roll with a specified number of sides.
 def roll(num_sides = 6):
@@ -14,12 +16,15 @@ def roll(num_sides = 6):
 # Check if the input is a string representing a dice roll or a numeric value
 # and roll the dice accordingly. If it's a numeric value, return it as is.
 def check_and_roll_numeric(dice):
+    if not isinstance(dice, str):
+        dice = str(dice)
+
     if has_notation(dice):
-        if re.match(SHORTHAND_NOTATION, dice):
+        if re.match(SHORTHAND_NOTATION, dice, re.IGNORECASE):
             num_sides = int(re.search(r'(\d+)', dice).group(1))
             result = roll(num_sides)
             return result
-        elif re.match(DIE_NOTATION, dice):
+        elif re.match(DIE_NOTATION, dice, re.IGNORECASE):
             match = re.search(DIE_NOTATION, dice)
             num_dice = int(match.group(1))
             num_sides = int(match.group(2))
@@ -45,7 +50,7 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     crits = 0
     reroll_crits = 0
     if success == 0:
-        return dice
+        return dice, 0
     
     for _ in range(dice):
         result = roll()
@@ -69,17 +74,17 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     
     return reroll_total + total, crits + reroll_crits
 
-def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value):
+def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value) -> int:
     if strength == 0:
         return 6
     if toughness == 0:
-        return 0
+        return 2
     
-    # modifiers to wound
+    # modifiers to wound (negitive is better)
     modifier = 0
     if plus_wound:
         modifier += -1
-    elif minus_wound == MinusWoundType.MINUS_ALWAYS.value:
+    if minus_wound == MinusWoundType.MINUS_ALWAYS.value:
         modifier += 1
     elif minus_wound == MinusWoundType.MINUS_STR_GREATER.value and strength > toughness:
         modifier += 1
@@ -127,20 +132,26 @@ def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = Fal
     return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, crit_wound)
 
 def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
-    if plus_save and save > 2:
-        save -= 1
-    
-    final_save = save + ap
+    #modify the saves ignoring rules
+    final_save = save
+    if plus_save:
+        final_save -= 1
+    final_save += ap
+
+    # apply rules
+    if final_save < 2:
+        final_save = 2
+
     if final_save > invuln and invuln != 0:
         final_save = invuln
         
     # Your save cannot be better than a 3 unless your base save is already better than 3
-    if final_save < 3 and save <= 2:
+    if final_save < 3 and save > 2:
         final_save = 3
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
+def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
@@ -149,14 +160,13 @@ def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDam
         amt -= 1
 
     # Simulate all damage rolls and modify them as needed
-    if return_as_list:
-        for _ in range(amt):
-            d = check_and_roll_numeric(damage)
-            if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
-                d -= 1
-            elif minus_damage == MinusDamageType.MINUS_HALF.value:
-                d = -(-d // 2)
-            damage_list.append(d)
+    for _ in range(amt):
+        d = check_and_roll_numeric(damage)
+        if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
+            d -= 1
+        elif minus_damage == MinusDamageType.MINUS_HALF.value:
+            d = -(-d // 2)
+        damage_list.append(d)
         
     return damage_list if return_as_list else sum(damage_list)
 
