@@ -20,6 +20,7 @@ def run_simulation():
         MOD_TORRENT = mod_torrent_var.get() or False
         MOD_REROLL_HITS = mod_reroll_hits_var.get() or RerollType.NO_REROLL
         MOD_REROLL_WOUNDS = mod_reroll_wounds_var.get() or RerollType.NO_REROLL
+        MOD_REROLL_DAMAGE = mod_reroll_damage_var.get() or RerollType.NO_REROLL
         MOD_SUSTAINED_HITS = str(mod_sustained_hits_var.get() or 0)
         MOD_LETHAL_HITS = mod_lethal_hits_var.get() or False
         MOD_DEVESTATING_WOUNDS = mod_devestating_wounds_var.get() or False
@@ -119,10 +120,11 @@ def run_simulation():
             
             # calc damage
             previous_dice = calc_damage(
-                amt=previous_dice + added_damage, 
+                amt=previous_dice + added_damage,
                 damage=ATTACK_DMG,
                 return_as_list=True,
-                minus_damage=MOD_MINUS_DAMAGE
+                minus_damage=MOD_MINUS_DAMAGE,
+                reroll_damage=MOD_REROLL_DAMAGE
             )
             AVERAGE_DAMAGE += sum(previous_dice)
 
@@ -225,7 +227,7 @@ defender_mod_frame.grid(row=0, column=3, padx=10, pady=10, sticky='ne')
 (attacks_entry, attack_score_entry, attack_strength_entry, attack_ap_entry, attack_dmg_entry, attack_form_data) = getAttackerForm()
 build_form(attack_form_data, attacker_frame)
 
-(mod_reroll_hits_var, mod_reroll_wounds_var, mod_sustained_hits_var, mod_lethal_hits_var, mod_torrent_var, mod_devestating_wounds_var, mod_blast_var, mod_plus_hit_var, mod_plus_wound_var, attack_crit_hit_entry, attack_crit_wound_entry, attacker_mod_form_data) = getAtkModifiersForm()
+(mod_reroll_hits_var, mod_reroll_wounds_var, mod_reroll_damage_var, mod_sustained_hits_var, mod_lethal_hits_var, mod_torrent_var, mod_devestating_wounds_var, mod_blast_var, mod_plus_hit_var, mod_plus_wound_var, attack_crit_hit_entry, attack_crit_wound_entry, attacker_mod_form_data) = getAtkModifiersForm()
 build_form(attacker_mod_form_data, attacker_mod_frame)
 
 (defend_toughness_entry, defend_save_entry, defend_invuln_entry, defend_wounds_entry, defend_model_count_entry, feel_no_pain_entry, defender_form_data) = getDefenderForm()

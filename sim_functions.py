@@ -1,11 +1,7 @@
 import random
 import re
-from enums import MinusDamageType, MinusWoundType
-
-SHORTHAND_NOTATION = r'^d(\d+)$'
-DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
-def has_notation(dice):
-    return bool(re.match(SHORTHAND_NOTATION, dice) or re.match(DIE_NOTATION, dice))
+from enums import MinusDamageType, MinusWoundType, RerollType
+from utils import DIE_NOTATION, SHORTHAND_NOTATION, has_notation, get_range, bad_roll
 
 # Function to simulate a dice roll with a specified number of sides.
 def roll(num_sides = 6):
@@ -21,7 +17,7 @@ def check_and_roll_numeric(dice):
             return result
         elif re.match(DIE_NOTATION, dice):
             match = re.search(DIE_NOTATION, dice)
-            num_dice = int(match.group(1))
+            num_dice = int(match.group(1)) or 1
             num_sides = int(match.group(2))
             modifier = int(match.group(3)) if match.group(3) else 0
             result = sum(roll(num_sides) for _ in range(num_dice)) + modifier
@@ -140,24 +136,34 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value) -> int | list:
+def calc_damage(amt, damage = 1, return_as_list = False, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value) -> int | list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
+    minimum_roll = 99999
+    reroll_one = False
     
     if minus_damage == MinusDamageType.NULL_ONE.value:
         amt -= 1
+    if reroll_damage == RerollType.REROLL_ONE.value and has_notation(damage):
+        reroll_one = True
 
     # Simulate all damage rolls and modify them as needed
     if return_as_list:
         for _ in range(amt):
             d = check_and_roll_numeric(damage)
-            if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1: 
+            if reroll_one and d < minimum_roll:
+                minimum_roll = d
+            elif reroll_damage == RerollType.REROLL_ALL.value and bad_roll(d, damage, threshold=0.2):
+                d = check_and_roll_numeric(damage)
+            elif minus_damage == MinusDamageType.MINUS_ONE.value and d > 1:
                 d -= 1
             elif minus_damage == MinusDamageType.MINUS_HALF.value:
                 d = -(-d // 2)
             damage_list.append(d)
         
+    if reroll_one:
+        damage_list.remove(minimum_roll)
     return damage_list if return_as_list else sum(damage_list)
 
 def calc_feel_no_pain(damage, fnp = 0) -> int | list:

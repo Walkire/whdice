@@ -28,6 +28,7 @@ def getAttackerForm():
 def getAtkModifiersForm():
     mod_reroll_hits_var = tk.StringVar()
     mod_reroll_wounds_var = tk.StringVar()
+    mod_reroll_damage_var = tk.StringVar()
     mod_sustained_hits_var = tk.StringVar()
     mod_lethal_hits_var = tk.IntVar()
     mod_torrent_var = tk.IntVar()
@@ -41,6 +42,7 @@ def getAtkModifiersForm():
     form_data = [
         {"label": "Reroll Hit", "entry": mod_reroll_hits_var, "options": RerollType, "default": RerollType.NO_REROLL.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
         {"label": "Reroll Wound", "entry": mod_reroll_wounds_var, "options": RerollType, "default": RerollType.NO_REROLL.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+        {"label": "Reroll Damage", "entry": mod_reroll_damage_var, "options": RerollType, "default": RerollType.NO_REROLL.value, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
         {"label": "+1 Hit", "entry": mod_plus_hit_var, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         {"label": "+1 Wound", "entry": mod_plus_wound_var, "default": 0, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         {"label": "Sustained Hit", "entry": mod_sustained_hits_var, "default": 0, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
@@ -55,6 +57,7 @@ def getAtkModifiersForm():
     return (
         mod_reroll_hits_var,
         mod_reroll_wounds_var,
+        mod_reroll_damage_var,
         mod_sustained_hits_var,
         mod_lethal_hits_var,
         mod_torrent_var,
