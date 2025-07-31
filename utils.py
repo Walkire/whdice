@@ -1,6 +1,7 @@
 import tkinter as ttk
 import re
 from enums import TkType
+from classes.data import Data
 
 SHORTHAND_NOTATION = r'^d(\d+)$'
 DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
