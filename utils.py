@@ -1,10 +1,39 @@
+import tkinter as tk
 import re
+from enums import TkType
 
 SHORTHAND_NOTATION = r'^d(\d+)$'
-DIE_NOTATION = r'^(\d*)d(\d+)([+-]\d+)?$'
-
+DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
 def has_notation(dice):
-    return bool(re.match(SHORTHAND_NOTATION, dice) or re.match(DIE_NOTATION, dice))
+    if isinstance(dice, int): return False
+    return bool(re.match(SHORTHAND_NOTATION, dice, re.IGNORECASE) or re.match(DIE_NOTATION, dice, re.IGNORECASE))
+
+def get_var(entry):
+    return entry.var() if hasattr(entry, "var") else entry
+
+def build_form(fields, target_frame):
+    # Build the form dynamically
+    for field in fields:
+        needs_label = True
+
+        if field["type"] == TkType.ENTRY:
+            entry = tk.Entry(target_frame, textvariable=get_var(field['entry']))
+
+        elif field["type"] == TkType.CHECKBUTTON:
+            entry = tk.Checkbutton(target_frame, text=field['label'], variable=get_var(field['entry']))
+            needs_label = False
+
+        elif field["type"] == TkType.OPTIONMENU:
+            options = [opt.value for opt in field["options"]]
+            entry = tk.OptionMenu(target_frame, get_var(field['entry']), *options)
+
+        if needs_label:
+            label = tk.Label(target_frame, text=field['label'])
+            label_style = field.get('label_style', field.get('style', {}))
+            label.grid(**label_style)
+
+        entry_style = field.get('entry_style', field.get('style', {}))
+        entry.grid(**entry_style)
 
 def get_range(value):
     if not has_notation(value):
