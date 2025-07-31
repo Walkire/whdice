@@ -168,6 +168,20 @@ class TestCalcSavesFunction(unittest.TestCase):
 class TestCalcDamageFunction(unittest.TestCase):
     def test_calc_damage_no_modifiers(self):
         self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=False), 6)
+    
+    @patch('sim_functions.check_and_roll_numeric', return_value=6)
+    def test_calc_damage_as_notation(self, mock_roll):
+        self.assertEqual(sim_functions.calc_damage(3, damage="1d6", return_as_list=False), 18)
+        
+    @patch('sim_functions.check_and_roll_numeric')
+    def test_calc_damage_with_reroll_all(self, mock_roll):
+        mock_roll.side_effect = [1, 6, 1, 4] # rolls are in pairs
+        self.assertEqual(sim_functions.calc_damage(2, damage="1d6", return_as_list=False, reroll_damage=enums.RerollType.REROLL_ALL.value), 10) 
+        
+    @patch('sim_functions.check_and_roll_numeric')
+    def test_calc_damage_with_reroll_one(self, mock_roll):
+        mock_roll.side_effect = [4, 1, 5, 6]
+        self.assertEqual(sim_functions.calc_damage(3, damage="1d6", return_as_list=False, reroll_damage=enums.RerollType.REROLL_ONE.value), 15) 
 
     def test_calc_damage_return_as_list(self):
         self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=True), [2, 2, 2])

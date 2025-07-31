@@ -149,8 +149,9 @@ def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDama
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
-    minimum_roll = 99999
+    minimum_roll = 100
     reroll_one = False
+    roll_threshold = 0.2
     
     if minus_damage == MinusDamageType.NULL_ONE.value:
         amt -= 1
@@ -162,16 +163,17 @@ def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDama
         d = check_and_roll_numeric(damage)
         if reroll_one and d < minimum_roll:
             minimum_roll = d
-        elif reroll_damage == RerollType.REROLL_ALL.value and bad_roll(d, damage, threshold=0.2):
+        if reroll_damage == RerollType.REROLL_ALL.value and bad_roll(d, damage, threshold=roll_threshold):
             d = check_and_roll_numeric(damage)
-        elif minus_damage == MinusDamageType.MINUS_ONE.value and d > 1:
+        if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1:
             d -= 1
-        elif minus_damage == MinusDamageType.MINUS_HALF.value:
+        if minus_damage == MinusDamageType.MINUS_HALF.value:
             d = -(-d // 2)
         damage_list.append(d)
         
-    if reroll_one:
+    if reroll_one and bad_roll(minimum_roll, damage, threshold=roll_threshold):
         damage_list.remove(minimum_roll)
+        damage_list.append(check_and_roll_numeric(damage))
     return damage_list if return_as_list else sum(damage_list)
 
 def calc_feel_no_pain(damage, fnp = 0) -> int | list:

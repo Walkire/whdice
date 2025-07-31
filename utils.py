@@ -5,8 +5,7 @@ from enums import TkType
 SHORTHAND_NOTATION = r'^d(\d+)$'
 DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
 def has_notation(dice):
-    if isinstance(dice, int): return False
-    return bool(re.match(SHORTHAND_NOTATION, dice, re.IGNORECASE) or re.match(DIE_NOTATION, dice, re.IGNORECASE))
+    return bool(re.match(SHORTHAND_NOTATION, str(dice), re.IGNORECASE) or re.match(DIE_NOTATION, str(dice), re.IGNORECASE))
 
 def get_var(entry):
     return entry.var() if hasattr(entry, "var") else entry
@@ -38,6 +37,8 @@ def build_form(fields, target_frame):
 def get_range(value):
     if not has_notation(value):
         return value
+    if not isinstance(value, str):
+        value = str(value)
     
     match = re.match(DIE_NOTATION, value.strip())
     if not match:
