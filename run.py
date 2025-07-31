@@ -96,7 +96,7 @@ def run_simulation():
                 amt=previous_dice + added_damage, 
                 damage=ATTACKER.damage,
                 return_as_list=True,
-                minus_damage=DEFENDER.minus_damage
+                minus_damage=DEFENDER.minus_damage,
                 reroll_damage=ATTACKER.reroll_damage
             )
             AVERAGE_DAMAGE += sum(previous_dice)
