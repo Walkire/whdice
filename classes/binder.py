@@ -94,3 +94,7 @@ class TinkerBinder:
     # Delegate all other attribute access to the underlying tk.Variable
     def __getattr__(self, attr):
         return getattr(self._var, attr)
+    
+    # For debugging
+    def __repr__(self):
+        return f"TinkerBinder({repr(self.get())})"

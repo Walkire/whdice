@@ -15,6 +15,7 @@ DEFAULTS = {
     "torrent": False,
     "reroll_hits": RerollType.NO_REROLL.value,
     "reroll_wounds": RerollType.NO_REROLL.value,
+    "reroll_damage": RerollType.NO_REROLL.value,
     "sustained_hits": "0",
     "lethal_hits": False,
     "devestating_wounds": False,
@@ -36,6 +37,7 @@ class Attacker:
         self.torrent = TinkerBinder(tk.IntVar, DEFAULTS['torrent'])
         self.reroll_hits = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_hits'])
         self.reroll_wounds = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_wounds'])
+        self.reroll_damage = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_damage'])
         self.sustained_hits = TinkerBinder(tk.StringVar, value=DEFAULTS['sustained_hits'])
         self.lethal_hits = TinkerBinder(tk.IntVar, value=DEFAULTS['lethal_hits'])
         self.devestating_wounds = TinkerBinder(tk.IntVar, value=DEFAULTS['devestating_wounds'])
@@ -63,6 +65,7 @@ class Attacker:
         build_form([
             {"label": "Reroll Hit", "entry": self.reroll_hits, "options": RerollType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Reroll Wound", "entry": self.reroll_wounds, "options": RerollType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Reroll Damage", "entry": self.reroll_damage, "options": RerollType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "+1 Hit", "entry": self.plus_hit, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "+1 Wound", "entry": self.plus_wound, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Sustained Hit", "entry": self.sustained_hits, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
