@@ -1,4 +1,5 @@
-import tkinter as ttk
+import tkinter as tk
+from tkinter import ttk
 import re
 from enums import TkType
 from classes.data import Data
@@ -34,6 +35,10 @@ def build_form(fields, target_frame):
         elif field["type"] == TkType.OPTIONMENU:
             options = [opt.value for opt in field["options"]]
             entry = ttk.OptionMenu(target_frame, get_var(field['entry']), *options)
+            
+        elif field["type"] == TkType.LISTBOX:
+            variables = tk.Variable(value=get_var(field['entry']))
+            entry = ttk.Listbox(target_frame, listvariable=variables)
 
         if needs_label:
             label = ttk.Label(target_frame, text=field['label'])

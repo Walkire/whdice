@@ -10,11 +10,14 @@ from enums import TkType
 
 ATTACKER = None
 DEFENDER = None
+WEAPONS = []
+WEAPON_LIST = None
+
 SIMULATIONS = 100000
 
-WEAPONS = []
-
 def run_simulation():
+    global WEAPONS
+    
     try:
         if not ATTACKER or not DEFENDER:
             raise Exception("No unit data was found")
@@ -46,6 +49,8 @@ def run_simulation():
                 added_saves = 0
                 added_wounds = 0
                 added_damage = 0
+                last_remainder = 0
+                total_kills = 0
                 
                 # calc attacks
                 previous_dice = calc_attacks(weapon.attacks)
@@ -117,13 +122,16 @@ def run_simulation():
                 AVERAGE_FEEL_NO_PAIN += sum(previous_dice)
                 
                 # calc kills
-                previous_dice = calc_kills(
+                previous_dice, last_remainder = calc_kills(
                     dmg_list=previous_dice,
-                    wounds=DEFENDER.wounds)
+                    wounds=DEFENDER.wounds,
+                    remainder=last_remainder)
                 AVERAGE_KILLS += previous_dice
+                
+                total_kills += previous_dice
 
-                if previous_dice >= DEFENDER.model_count:
-                    UNITS_WIPED += 1
+            if total_kills >= DEFENDER.model_count:
+                UNITS_WIPED += 1
             
         # Display results using messagebox
         message = f"with {TO_WOUND} to wound\n"
@@ -181,22 +189,58 @@ simulation_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='n
 ATTACKER = Attacker(attacker_frame, attacker_mod_frame)
 DEFENDER = Defender(defender_frame, defender_mod_frame)
 
+weapon_listbox = None
+
 def save_attacker():
+    global WEAPON_LIST, weapon_listbox
+    
+    if not WEAPON_LIST:
+        WEAPON_LIST = tk.Variable(value=[])
+        
+        weapon_listbox = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
+        weapon_listbox.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        
     current_weapon = ATTACKER.getValues()
     WEAPONS.append(current_weapon)
+    weapon_str = build_weapon_string(current_weapon)
+
+    current_list = WEAPON_LIST.get()
+    updated_list = list(current_list) + [weapon_str]
+    WEAPON_LIST.set(updated_list)
+    
     ATTACKER.resetValues()
-    build_form([{
-        "label": f"Weapon {len(WEAPONS)}",
-        "entry": build_weapon_string(current_weapon),
-        "type": TkType.LABEL,
-    }], simulation_frame)
+    
+def delete_selected_weapon():
+    selected_indices = weapon_listbox.curselection()
+    if not selected_indices:
+        return
+
+    # Delete from both the display and data list (backwards to avoid shifting)
+    for index in reversed(selected_indices):
+        del WEAPONS[index]
+
+    # Rebuild the displayed list from the updated WEAPONS list
+    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
+    WEAPON_LIST.set(display_strings)
+        
+
+# def sort_weapons():
+#     return None
 
 # Add simulation button
 run_button = ttk.Button(window, text="Run Simulation", command=run_simulation)
-run_button.grid(row=1, column=3, columnspan=2, pady=10)
+run_button.grid(row=1, column=3, columnspan=1, pady=10)
 
 save_button = ttk.Button(window, text="Save", command=save_attacker)
 save_button.grid(row=1, column=2, columnspan=1, pady=10)
+
+# Delete button
+delete_button = ttk.Button(simulation_frame, text="Delete Selected", command=delete_selected_weapon)
+delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
+
+# # Sort button
+# sort_button = ttk.Button(simulation_frame, text="Sort Weapons", command=sort_weapons)
+# sort_button.grid(row=2, column=0, padx=5, pady=2, sticky='w')
 
 # Start Tkinter main loop
 window.mainloop()

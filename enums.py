@@ -6,6 +6,7 @@ class TkType(Enum):
     ENTRY = 2
     CHECKBUTTON = 3
     OPTIONMENU = 4
+    LISTBOX = 5
     
 class RerollType(Enum):
     NO_REROLL = 'None'

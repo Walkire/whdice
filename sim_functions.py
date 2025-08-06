@@ -191,9 +191,9 @@ def calc_feel_no_pain(damage, fnp = 0) -> int | list:
         return dmg
 
 
-def calc_kills(dmg_list: list = [], wounds = 1):
+def calc_kills(dmg_list: list = [], wounds = 1, remainder=0):
     kills = 0
-    current_wound = wounds
+    current_wound = wounds if remainder == 0 else remainder
     for dmg in dmg_list:
         if dmg >= current_wound:
             kills += 1
@@ -201,4 +201,4 @@ def calc_kills(dmg_list: list = [], wounds = 1):
         else:
             current_wound -= dmg
 
-    return kills
+    return kills, current_wound
