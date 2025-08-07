@@ -13,6 +13,9 @@ DEFENDER = None
 WEAPONS = []
 WEAPON_LIST = None
 
+DRAG_INDEX = None
+WEAPON_LISTBOX = None
+
 SIMULATIONS = 100000
 
 def run_simulation():
@@ -189,16 +192,22 @@ simulation_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='n
 ATTACKER = Attacker(attacker_frame, attacker_mod_frame)
 DEFENDER = Defender(defender_frame, defender_mod_frame)
 
-weapon_listbox = None
-
 def save_attacker():
-    global WEAPON_LIST, weapon_listbox
+    global WEAPON_LIST, WEAPON_LISTBOX
     
     if not WEAPON_LIST:
         WEAPON_LIST = tk.Variable(value=[])
         
-        weapon_listbox = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
-        weapon_listbox.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        WEAPON_LISTBOX = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
+        WEAPON_LISTBOX.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        
+        WEAPON_LISTBOX.bind("<Button-1>", on_drag_start)
+        WEAPON_LISTBOX.bind("<B1-Motion>", on_drag_motion)
+        WEAPON_LISTBOX.bind("<ButtonRelease-1>", on_drag_drop)
+        
+        # Delete button
+        delete_button = ttk.Button(simulation_frame, text="Delete", command=delete_selected_weapon)
+        delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
         
     current_weapon = ATTACKER.getValues()
     WEAPONS.append(current_weapon)
@@ -211,7 +220,7 @@ def save_attacker():
     ATTACKER.resetValues()
     
 def delete_selected_weapon():
-    selected_indices = weapon_listbox.curselection()
+    selected_indices = WEAPON_LISTBOX.curselection()
     if not selected_indices:
         return
 
@@ -222,10 +231,39 @@ def delete_selected_weapon():
     # Rebuild the displayed list from the updated WEAPONS list
     display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
     WEAPON_LIST.set(display_strings)
-        
 
-# def sort_weapons():
-#     return None
+def on_drag_start(event):
+    global DRAG_INDEX
+    widget = event.widget
+    DRAG_INDEX = widget.nearest(event.y)  # Get index of clicked item
+
+def on_drag_motion(event):
+    widget = event.widget
+    index = widget.nearest(event.y)
+    widget.selection_clear(0, tk.END)
+    widget.selection_set(index)  # Optional: visually highlight where you’re dragging
+
+def on_drag_drop(event):
+    global DRAG_INDEX
+    widget = event.widget
+    drag_end_index = widget.nearest(event.y)
+
+    if DRAG_INDEX is None or drag_end_index == DRAG_INDEX:
+        return
+
+    # Move the item
+    item = WEAPONS.pop(DRAG_INDEX)
+    WEAPONS.insert(drag_end_index, item)
+
+    # Update list
+    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
+    WEAPON_LIST.set(display_strings)
+
+    # Update selection
+    widget.selection_clear(0, tk.END)
+    widget.selection_set(drag_end_index)
+
+    DRAG_INDEX = None
 
 # Add simulation button
 run_button = ttk.Button(window, text="Run Simulation", command=run_simulation)
@@ -233,14 +271,6 @@ run_button.grid(row=1, column=3, columnspan=1, pady=10)
 
 save_button = ttk.Button(window, text="Save", command=save_attacker)
 save_button.grid(row=1, column=2, columnspan=1, pady=10)
-
-# Delete button
-delete_button = ttk.Button(simulation_frame, text="Delete Selected", command=delete_selected_weapon)
-delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
-
-# # Sort button
-# sort_button = ttk.Button(simulation_frame, text="Sort Weapons", command=sort_weapons)
-# sort_button.grid(row=2, column=0, padx=5, pady=2, sticky='w')
 
 # Start Tkinter main loop
 window.mainloop()

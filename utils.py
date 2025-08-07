@@ -34,7 +34,7 @@ def build_form(fields, target_frame):
 
         elif field["type"] == TkType.OPTIONMENU:
             options = [opt.value for opt in field["options"]]
-            entry = ttk.OptionMenu(target_frame, get_var(field['entry']), *options)
+            entry = tk.OptionMenu(target_frame, get_var(field['entry']), *options)
             
         elif field["type"] == TkType.LISTBOX:
             variables = tk.Variable(value=get_var(field['entry']))
