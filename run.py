@@ -41,7 +41,6 @@ def run_simulation():
         AVERAGE_CRIT_HIT = 0
         AVERAGE_CRIT_WOUND = 0
 
-        TO_WOUND = calc_to_wound(ATTACKER.strength, DEFENDER.toughness, ATTACKER.plus_wound, DEFENDER.minus_wound)
         previous_dice = 0
 
         if not WEAPONS:
@@ -55,6 +54,8 @@ def run_simulation():
                 last_remainder = 0
                 total_kills = 0
                 
+                TO_WOUND = calc_to_wound(weapon.strength, DEFENDER.toughness, weapon.plus_wound, DEFENDER.minus_wound)
+                     
                 # calc attacks
                 previous_dice = calc_attacks(weapon.attacks)
                 if weapon.blast:
