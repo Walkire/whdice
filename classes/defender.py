@@ -2,19 +2,32 @@ import tkinter as tk
 from utils import build_form
 from enums import TkType, MinusDamageType, MinusWoundType
 from classes.binder import TinkerBinder
+from classes.data import Data
+
+DEFAULTS = {
+    "toughness": 3,
+    "save": 5,
+    "invuln": 0,
+    "wounds": 1,
+    "feel_no_pain": 0,
+    "model_count": 10,
+    "minus_damage": MinusDamageType.NO_MINUS.value,
+    "minus_wound": MinusWoundType.NO_MINUS.value,
+    "plus_save": False,
+}
 
 class Defender:
     def __init__(self, main_frame, mod_frame):
-        self.toughness = TinkerBinder(tk.IntVar, value=3)
-        self.save = TinkerBinder(tk.IntVar, value=5)
-        self.invuln = TinkerBinder(tk.IntVar, value=0)
-        self.wounds = TinkerBinder(tk.IntVar, value=1)
-        self.feel_no_pain = TinkerBinder(tk.IntVar, value=0)
-        self.model_count = TinkerBinder(tk.IntVar, value=10)
+        self.toughness = TinkerBinder(tk.IntVar, value=DEFAULTS['toughness'])
+        self.save = TinkerBinder(tk.IntVar, value=DEFAULTS['save'])
+        self.invuln = TinkerBinder(tk.IntVar, value=DEFAULTS['invuln'])
+        self.wounds = TinkerBinder(tk.IntVar, value=DEFAULTS['wounds'])
+        self.feel_no_pain = TinkerBinder(tk.IntVar, value=DEFAULTS['feel_no_pain'])
+        self.model_count = TinkerBinder(tk.IntVar, value=DEFAULTS['model_count'])
 
-        self.minus_damage = TinkerBinder(tk.StringVar, value=MinusDamageType.NO_MINUS.value)
-        self.minus_wound = TinkerBinder(tk.StringVar, value=MinusWoundType.NO_MINUS.value)
-        self.plus_save = TinkerBinder(tk.IntVar, value=False)
+        self.minus_damage = TinkerBinder(tk.StringVar, value=DEFAULTS['minus_damage'])
+        self.minus_wound = TinkerBinder(tk.StringVar, value=DEFAULTS['minus_wound'])
+        self.plus_save = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_save'])
 
         self.main_frame = main_frame
         self.modifier_frame = mod_frame
@@ -39,3 +52,17 @@ class Defender:
             {"label": "Wound reduction", "entry": self.minus_wound, "options": MinusWoundType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "+1 Save", "entry": self.plus_save, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         ], self.modifier_frame)
+
+    def getValues(self):
+        values = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if isinstance(attr, TinkerBinder):
+                values[attr_name] = attr.get()
+        return Data(**values)
+    
+    def resetValues(self):
+        for key, value in DEFAULTS.items():
+            attr = getattr(self, key, None)
+            if isinstance(attr, TinkerBinder):
+                attr.set(value)

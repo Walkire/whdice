@@ -5,12 +5,22 @@ from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, c
 from enums import RerollType
 from classes.attacker import Attacker
 from classes.defender import Defender
+from utils import build_form, build_weapon_string
+from enums import TkType
 
 ATTACKER = None
 DEFENDER = None
+WEAPONS = []
+WEAPON_LIST = None
+
+DRAG_INDEX = None
+WEAPON_LISTBOX = None
+
 SIMULATIONS = 100000
 
 def run_simulation():
+    global WEAPONS
+    
     try:
         if not ATTACKER or not DEFENDER:
             raise Exception("No unit data was found")
@@ -33,88 +43,97 @@ def run_simulation():
 
         TO_WOUND = calc_to_wound(ATTACKER.strength, DEFENDER.toughness, ATTACKER.plus_wound, DEFENDER.minus_wound)
         previous_dice = 0
-        
+
+        if not WEAPONS:
+            WEAPONS.append(ATTACKER.getValues())
+
         for _ in range(SIMULATIONS):
-            added_saves = 0
-            added_wounds = 0
-            added_damage = 0
-            
-            # calc attacks
-            previous_dice = calc_attacks(ATTACKER.attacks)
-            if ATTACKER.blast:
-                    previous_dice += int((DEFENDER.model_count / 5) // 1)
-            AVERAGE_ATTACKS += previous_dice
-            
-            # calc hits
-            if not ATTACKER.torrent:
-                previous_dice, crits = calc_hits(
-                    atk=previous_dice,
-                    score=ATTACKER.score,
-                    reroll_hit=ATTACKER.reroll_hits == RerollType.REROLL_ALL.value,
-                    reroll_hit_one=ATTACKER.reroll_hits == RerollType.REROLL_ONE.value,
-                    crit_hit=ATTACKER.critical_hit,
-                    plus_hit=ATTACKER.plus_hit
+            for weapon in WEAPONS:
+                added_saves = 0
+                added_wounds = 0
+                added_damage = 0
+                last_remainder = 0
+                total_kills = 0
+                
+                # calc attacks
+                previous_dice = calc_attacks(weapon.attacks)
+                if weapon.blast:
+                        previous_dice += int((DEFENDER.model_count / 5) // 1)
+                AVERAGE_ATTACKS += previous_dice
+                
+                # calc hits
+                if not weapon.torrent:
+                    previous_dice, crits = calc_hits(
+                        atk=previous_dice,
+                        score=weapon.score,
+                        reroll_hit=weapon.reroll_hits == RerollType.REROLL_ALL.value,
+                        reroll_hit_one=weapon.reroll_hits == RerollType.REROLL_ONE.value,
+                        crit_hit=weapon.critical_hit,
+                        plus_hit=weapon.plus_hit
+                    )
+
+                    # calc special crits
+                    if weapon.sustained_hits != "0":
+                        added_wounds = calc_sustained_hits(crits, weapon.sustained_hits)
+                        AVERAGE_SUSTAINED_HITS += added_wounds
+                    AVERAGE_HITS += previous_dice
+                    if weapon.lethal_hits:
+                        added_saves = crits
+                        previous_dice -= crits
+                        
+                    AVERAGE_CRIT_HIT += crits                
+                
+                # calc wound
+                previous_dice, crits = calc_wounds(
+                    hits=previous_dice + added_wounds, 
+                    to_wound=TO_WOUND,
+                    reroll_wound=weapon.reroll_wounds == RerollType.REROLL_ALL.value, 
+                    reroll_wound_one=weapon.reroll_wounds == RerollType.REROLL_ONE.value, 
+                    crit_wound=weapon.critical_wound
                 )
-
-                # calc special crits
-                if ATTACKER.sustained_hits != "0":
-                    added_wounds = calc_sustained_hits(crits, ATTACKER.sustained_hits)
-                    AVERAGE_SUSTAINED_HITS += added_wounds
-                AVERAGE_HITS += previous_dice
-                if ATTACKER.lethal_hits:
-                    added_saves = crits
+                AVERAGE_WOUNDS += previous_dice
+                if weapon.devestating_wounds:
+                    added_damage = crits
                     previous_dice -= crits
-                    
-                AVERAGE_CRIT_HIT += crits                
-            
-            # calc wound
-            previous_dice, crits = calc_wounds(
-                hits=previous_dice + added_wounds, 
-                to_wound=TO_WOUND,
-                reroll_wound=ATTACKER.reroll_wounds == RerollType.REROLL_ALL.value, 
-                reroll_wound_one=ATTACKER.reroll_wounds == RerollType.REROLL_ONE.value, 
-                crit_wound=ATTACKER.critical_wound
-            )
-            AVERAGE_WOUNDS += previous_dice
-            if ATTACKER.devestating_wounds:
-                added_damage = crits
-                previous_dice -= crits
-            AVERAGE_CRIT_WOUND += crits
-            
-            # calc save
-            previous_dice, crits = calc_saves(
-                wounds=previous_dice + added_saves, 
-                save=DEFENDER.save, 
-                invuln=DEFENDER.invuln, 
-                ap=ATTACKER.ap,
-                plus_save=DEFENDER.plus_save
-            )
-            AVERAGE_SAVES += previous_dice
-            
-            # calc damage
-            previous_dice = calc_damage(
-                amt=previous_dice + added_damage, 
-                damage=ATTACKER.damage,
-                return_as_list=True,
-                minus_damage=DEFENDER.minus_damage,
-                reroll_damage=ATTACKER.reroll_damage
-            )
-            AVERAGE_DAMAGE += sum(previous_dice)
+                AVERAGE_CRIT_WOUND += crits
+                
+                # calc save
+                previous_dice, crits = calc_saves(
+                    wounds=previous_dice + added_saves, 
+                    save=DEFENDER.save, 
+                    invuln=DEFENDER.invuln, 
+                    ap=weapon.ap,
+                    plus_save=DEFENDER.plus_save
+                )
+                AVERAGE_SAVES += previous_dice
+                
+                # calc damage
+                previous_dice = calc_damage(
+                    amt=previous_dice + added_damage, 
+                    damage=weapon.damage,
+                    return_as_list=True,
+                    minus_damage=DEFENDER.minus_damage,
+                    reroll_damage=weapon.reroll_damage
+                )
+                AVERAGE_DAMAGE += sum(previous_dice)
 
-            #calc feel no pain
-            previous_dice = calc_feel_no_pain(
-                damage=previous_dice,
-                fnp=DEFENDER.feel_no_pain
-            )
-            AVERAGE_FEEL_NO_PAIN += sum(previous_dice)
-            
-            # calc kills
-            previous_dice = calc_kills(
-                dmg_list=previous_dice,
-                wounds=DEFENDER.wounds)
-            AVERAGE_KILLS += previous_dice
+                #calc feel no pain
+                previous_dice = calc_feel_no_pain(
+                    damage=previous_dice,
+                    fnp=DEFENDER.feel_no_pain
+                )
+                AVERAGE_FEEL_NO_PAIN += sum(previous_dice)
+                
+                # calc kills
+                previous_dice, last_remainder = calc_kills(
+                    dmg_list=previous_dice,
+                    wounds=DEFENDER.wounds,
+                    remainder=last_remainder)
+                AVERAGE_KILLS += previous_dice
+                
+                total_kills += previous_dice
 
-            if previous_dice >= DEFENDER.model_count:
+            if total_kills >= DEFENDER.model_count:
                 UNITS_WIPED += 1
             
         # Display results using messagebox
@@ -149,7 +168,7 @@ def run_simulation():
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {str(e)}")
         print(f"Line: {e.__traceback__.tb_lineno} - {str(e)}")
-
+    
 # Create a Tkinter window
 window = tk.Tk()
 window.title("Warhammer Combat Simulator")
@@ -167,12 +186,91 @@ defender_frame.grid(row=0, column=2, padx=10, pady=10, sticky='ne')
 defender_mod_frame = ttk.LabelFrame(window, text="Defender Modifiers")
 defender_mod_frame.grid(row=0, column=3, padx=10, pady=10, sticky='ne')
 
+simulation_frame = ttk.LabelFrame(window, text="Simulations")
+simulation_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='nw')
+
 ATTACKER = Attacker(attacker_frame, attacker_mod_frame)
 DEFENDER = Defender(defender_frame, defender_mod_frame)
 
+def save_attacker():
+    global WEAPON_LIST, WEAPON_LISTBOX
+    
+    if not WEAPON_LIST:
+        WEAPON_LIST = tk.Variable(value=[])
+        
+        WEAPON_LISTBOX = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
+        WEAPON_LISTBOX.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        
+        WEAPON_LISTBOX.bind("<Button-1>", on_drag_start)
+        WEAPON_LISTBOX.bind("<B1-Motion>", on_drag_motion)
+        WEAPON_LISTBOX.bind("<ButtonRelease-1>", on_drag_drop)
+        
+        # Delete button
+        delete_button = ttk.Button(simulation_frame, text="Delete", command=delete_selected_weapon)
+        delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
+        
+    current_weapon = ATTACKER.getValues()
+    WEAPONS.append(current_weapon)
+    weapon_str = build_weapon_string(current_weapon)
+
+    current_list = WEAPON_LIST.get()
+    updated_list = list(current_list) + [weapon_str]
+    WEAPON_LIST.set(updated_list)
+    
+    ATTACKER.resetValues()
+    
+def delete_selected_weapon():
+    selected_indices = WEAPON_LISTBOX.curselection()
+    if not selected_indices:
+        return
+
+    # Delete from both the display and data list (backwards to avoid shifting)
+    for index in reversed(selected_indices):
+        del WEAPONS[index]
+
+    # Rebuild the displayed list from the updated WEAPONS list
+    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
+    WEAPON_LIST.set(display_strings)
+
+def on_drag_start(event):
+    global DRAG_INDEX
+    widget = event.widget
+    DRAG_INDEX = widget.nearest(event.y)  # Get index of clicked item
+
+def on_drag_motion(event):
+    widget = event.widget
+    index = widget.nearest(event.y)
+    widget.selection_clear(0, tk.END)
+    widget.selection_set(index)  # Optional: visually highlight where you’re dragging
+
+def on_drag_drop(event):
+    global DRAG_INDEX
+    widget = event.widget
+    drag_end_index = widget.nearest(event.y)
+
+    if DRAG_INDEX is None or drag_end_index == DRAG_INDEX:
+        return
+
+    # Move the item
+    item = WEAPONS.pop(DRAG_INDEX)
+    WEAPONS.insert(drag_end_index, item)
+
+    # Update list
+    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
+    WEAPON_LIST.set(display_strings)
+
+    # Update selection
+    widget.selection_clear(0, tk.END)
+    widget.selection_set(drag_end_index)
+
+    DRAG_INDEX = None
+
 # Add simulation button
-run_button = tk.Button(window, text="Run Simulation", command=run_simulation)
-run_button.grid(row=1, column=3, columnspan=2, pady=10)
+run_button = ttk.Button(window, text="Run Simulation", command=run_simulation)
+run_button.grid(row=1, column=3, columnspan=1, pady=10)
+
+save_button = ttk.Button(window, text="Save", command=save_attacker)
+save_button.grid(row=1, column=2, columnspan=1, pady=10)
 
 # Start Tkinter main loop
 window.mainloop()

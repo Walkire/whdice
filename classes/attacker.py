@@ -2,27 +2,48 @@ import tkinter as tk
 from utils import build_form
 from enums import TkType, RerollType
 from classes.binder import TinkerBinder
+from classes.data import Data
+
+DEFAULTS = {
+    "attacks": "6",
+    "score": 3,
+    "strength": 5,
+    "ap": 1,
+    "damage": "2",
+    "critical_hit": 6,
+    "critical_wound": 6,
+    "torrent": False,
+    "reroll_hits": RerollType.NO_REROLL.value,
+    "reroll_wounds": RerollType.NO_REROLL.value,
+    "reroll_damage": RerollType.NO_REROLL.value,
+    "sustained_hits": "0",
+    "lethal_hits": False,
+    "devestating_wounds": False,
+    "blast": False,
+    "plus_wound": False,
+    "plus_hit": False
+}
 
 class Attacker:
     def __init__(self, main_frame, mod_frame):
-        self.attacks = TinkerBinder(tk.StringVar, value="6")
-        self.score = TinkerBinder(tk.IntVar, value=3)
-        self.strength = TinkerBinder(tk.IntVar,value=5)
-        self.ap = TinkerBinder(tk.IntVar, value=1)
-        self.damage = TinkerBinder(tk.StringVar, value="2")
-        self.critical_hit = TinkerBinder(tk.IntVar, value=6)
-        self.critical_wound = TinkerBinder(tk.IntVar, value=6)
+        self.attacks = TinkerBinder(tk.StringVar, value=DEFAULTS['attacks'])
+        self.score = TinkerBinder(tk.IntVar, value=DEFAULTS['score'])
+        self.strength = TinkerBinder(tk.IntVar,value=DEFAULTS['strength'])
+        self.ap = TinkerBinder(tk.IntVar, value=DEFAULTS['ap'])
+        self.damage = TinkerBinder(tk.StringVar, value=DEFAULTS['damage'])
+        self.critical_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['critical_hit'])
+        self.critical_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['critical_wound'])
 
-        self.torrent = TinkerBinder(tk.IntVar, value=False)
-        self.reroll_hits = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL.value)
-        self.reroll_wounds = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL.value)
-        self.reroll_damage = TinkerBinder(tk.StringVar, value=RerollType.NO_REROLL.value)
-        self.sustained_hits = TinkerBinder(tk.StringVar, value="0")
-        self.lethal_hits = TinkerBinder(tk.IntVar, value=False)
-        self.devestating_wounds = TinkerBinder(tk.IntVar, value=False)
-        self.blast = TinkerBinder(tk.IntVar, value=False)
-        self.plus_wound = TinkerBinder(tk.IntVar, value=False)
-        self.plus_hit = TinkerBinder(tk.IntVar, value=False)
+        self.torrent = TinkerBinder(tk.IntVar, DEFAULTS['torrent'])
+        self.reroll_hits = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_hits'])
+        self.reroll_wounds = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_wounds'])
+        self.reroll_damage = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_damage'])
+        self.sustained_hits = TinkerBinder(tk.StringVar, value=DEFAULTS['sustained_hits'])
+        self.lethal_hits = TinkerBinder(tk.IntVar, value=DEFAULTS['lethal_hits'])
+        self.devestating_wounds = TinkerBinder(tk.IntVar, value=DEFAULTS['devestating_wounds'])
+        self.blast = TinkerBinder(tk.IntVar, value=DEFAULTS['blast'])
+        self.plus_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_wound'])
+        self.plus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_hit'])
 
         self.main_frame = main_frame
         self.modifier_frame = mod_frame
@@ -55,3 +76,18 @@ class Attacker:
             {"label": "Critical Hit:", "entry": self.critical_hit, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Wound:", "entry": self.critical_wound, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}}
         ], self.modifier_frame)
+
+    def getValues(self):
+        values = {}
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if isinstance(attr, TinkerBinder):
+                values[attr_name] = attr.get()
+        return Data(**values)
+
+    
+    def resetValues(self):
+        for key, value in DEFAULTS.items():
+            attr = getattr(self, key, None)
+            if isinstance(attr, TinkerBinder):
+                attr.set(value)
