@@ -201,19 +201,23 @@ class TestCalcDamageFunction(unittest.TestCase):
 class TestCalcKillsFunction(unittest.TestCase):
     def test_calc_kills_one_health(self):
         damage = [1, 1, 1]
-        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=1), 3)
+        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=1), (3, 1))
 
     def test_calc_kills_overkill(self):
         damage = [20, 20, 20]
-        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=1), 3)
+        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=1), (3, 1))
 
     def test_calc_kills_no_kill(self):
         damage = [1, 1, 1]
-        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4), 0)
+        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4), (0, 1))
 
     def test_calc_kills_multiple_damage(self):
         damage = [2, 2, 2]
-        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4), 1)
+        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4), (1, 2))
+        
+    def test_calc_kills_has_remainder(self):
+        damage = [2, 2, 2]
+        self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4, remainder=2), (2, 4))
 
 if __name__ == '__main__':
     unittest.main()
