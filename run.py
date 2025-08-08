@@ -1,12 +1,11 @@
 import tkinter as tk
-from tkinter import messagebox
 from tkinter import ttk
+from tkinter import messagebox
 from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
 from enums import RerollType
 from classes.attacker import Attacker
 from classes.defender import Defender
-from utils import build_form, build_weapon_string
-from enums import TkType
+from utils import build_weapon_string
 
 ATTACKER = None
 DEFENDER = None
@@ -43,11 +42,10 @@ def run_simulation():
 
         previous_dice = 0
 
-        if not WEAPONS:
-            WEAPONS.append(ATTACKER.getValues())
+        weapons_to_use = WEAPONS if WEAPONS else [ATTACKER.getValues()]
 
         for _ in range(SIMULATIONS):
-            for weapon in WEAPONS:
+            for weapon in weapons_to_use:
                 added_saves = 0
                 added_wounds = 0
                 added_damage = 0
@@ -166,9 +164,51 @@ def run_simulation():
             message += "-------------\n"
             message += f"Percent chance unit dies - {round(UNITS_WIPED / SIMULATIONS * 100, 2)}%\n"
         messagebox.showinfo("Simulation Results", message)
+        
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {str(e)}")
         print(f"Line: {e.__traceback__.tb_lineno} - {str(e)}")
+         
+def refresh_weapon_list():
+    # Rebuilds the Listbox display from WEAPONS
+    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
+    WEAPON_LIST.set(display_strings)
+
+def save_attacker():
+    # Add the current attacker weapon config to the WEAPONS list and refresh UI
+    current_weapon = ATTACKER.getValues()
+    WEAPONS.append(current_weapon)
+    refresh_weapon_list()
+    ATTACKER.resetValues()
+
+def delete_selected_weapon():
+    # Remove selected weapon(s) from WEAPONS list and refresh UI
+    selected_indices = WEAPON_LISTBOX.curselection()
+    if not selected_indices:
+        return
+    for index in reversed(selected_indices):
+        del WEAPONS[index]
+    refresh_weapon_list()
+
+def on_drag_start(event):
+    global DRAG_INDEX
+    DRAG_INDEX = event.widget.nearest(event.y)
+
+def on_drag_motion(event):
+    index = event.widget.nearest(event.y)
+    event.widget.selection_clear(0, tk.END)
+    event.widget.selection_set(index)
+
+def on_drag_drop(event):
+    global DRAG_INDEX
+    drag_end_index = event.widget.nearest(event.y)
+    if DRAG_INDEX is None or drag_end_index == DRAG_INDEX:
+        return
+    WEAPONS.insert(drag_end_index, WEAPONS.pop(DRAG_INDEX))
+    refresh_weapon_list()
+    event.widget.selection_clear(0, tk.END)
+    event.widget.selection_set(drag_end_index)
+    DRAG_INDEX = None
     
 # Create a Tkinter window
 window = tk.Tk()
@@ -190,81 +230,19 @@ defender_mod_frame.grid(row=0, column=3, padx=10, pady=10, sticky='ne')
 simulation_frame = ttk.LabelFrame(window, text="Simulations")
 simulation_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='nw')
 
+WEAPON_LIST = tk.Variable(value=[])
+WEAPON_LISTBOX = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
+WEAPON_LISTBOX.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+
+WEAPON_LISTBOX.bind("<Button-1>", on_drag_start)
+WEAPON_LISTBOX.bind("<B1-Motion>", on_drag_motion)
+WEAPON_LISTBOX.bind("<ButtonRelease-1>", on_drag_drop)
+
+delete_button = ttk.Button(simulation_frame, text="Delete", command=delete_selected_weapon)
+delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
+
 ATTACKER = Attacker(attacker_frame, attacker_mod_frame)
 DEFENDER = Defender(defender_frame, defender_mod_frame)
-
-def save_attacker():
-    global WEAPON_LIST, WEAPON_LISTBOX
-    
-    if not WEAPON_LIST:
-        WEAPON_LIST = tk.Variable(value=[])
-        
-        WEAPON_LISTBOX = tk.Listbox(simulation_frame, listvariable=WEAPON_LIST, height=8, width=40)
-        WEAPON_LISTBOX.grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        
-        WEAPON_LISTBOX.bind("<Button-1>", on_drag_start)
-        WEAPON_LISTBOX.bind("<B1-Motion>", on_drag_motion)
-        WEAPON_LISTBOX.bind("<ButtonRelease-1>", on_drag_drop)
-        
-        # Delete button
-        delete_button = ttk.Button(simulation_frame, text="Delete", command=delete_selected_weapon)
-        delete_button.grid(row=1, column=0, padx=5, pady=2, sticky='w')
-        
-    current_weapon = ATTACKER.getValues()
-    WEAPONS.append(current_weapon)
-    weapon_str = build_weapon_string(current_weapon)
-
-    current_list = WEAPON_LIST.get()
-    updated_list = list(current_list) + [weapon_str]
-    WEAPON_LIST.set(updated_list)
-    
-    ATTACKER.resetValues()
-    
-def delete_selected_weapon():
-    selected_indices = WEAPON_LISTBOX.curselection()
-    if not selected_indices:
-        return
-
-    # Delete from both the display and data list (backwards to avoid shifting)
-    for index in reversed(selected_indices):
-        del WEAPONS[index]
-
-    # Rebuild the displayed list from the updated WEAPONS list
-    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
-    WEAPON_LIST.set(display_strings)
-
-def on_drag_start(event):
-    global DRAG_INDEX
-    widget = event.widget
-    DRAG_INDEX = widget.nearest(event.y)  # Get index of clicked item
-
-def on_drag_motion(event):
-    widget = event.widget
-    index = widget.nearest(event.y)
-    widget.selection_clear(0, tk.END)
-    widget.selection_set(index)  # Optional: visually highlight where you’re dragging
-
-def on_drag_drop(event):
-    global DRAG_INDEX
-    widget = event.widget
-    drag_end_index = widget.nearest(event.y)
-
-    if DRAG_INDEX is None or drag_end_index == DRAG_INDEX:
-        return
-
-    # Move the item
-    item = WEAPONS.pop(DRAG_INDEX)
-    WEAPONS.insert(drag_end_index, item)
-
-    # Update list
-    display_strings = [build_weapon_string(wpn) for wpn in WEAPONS]
-    WEAPON_LIST.set(display_strings)
-
-    # Update selection
-    widget.selection_clear(0, tk.END)
-    widget.selection_set(drag_end_index)
-
-    DRAG_INDEX = None
 
 # Add simulation button
 run_button = ttk.Button(window, text="Run Simulation", command=run_simulation)

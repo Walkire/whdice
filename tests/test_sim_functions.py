@@ -128,6 +128,9 @@ class TestCalcWoundFunction(unittest.TestCase):
 
     def test_calc_to_wound_modifier_bounds(self):
         self.assertEqual(sim_functions.calc_to_wound(4, 4, plus_wound=True, minus_wound=enums.MinusWoundType.MINUS_ALWAYS.value), 4)
+        
+    def test_calc_to_wound_modifier_bounds_2(self):
+        self.assertEqual(sim_functions.calc_to_wound(14, 9, plus_wound=True, minus_wound=enums.MinusWoundType.MINUS_STR_GREATER.value), 3)
 
 class TestCalcSavesFunction(unittest.TestCase):
     @patch('sim_functions.calc_success')
