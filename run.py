@@ -156,7 +156,7 @@ def run_simulation():
 
         for i, r in enumerate(results):
             row_data = (
-                f"{r["weapon"].name}" if r["weapon"].name else "-",
+                r["weapon"].name if r["weapon"].name else "-",
                 round(r["attacks"] / SIMULATIONS, 2),
                 "N/A" if r["weapon"].torrent else round(r["hits"] / SIMULATIONS, 2),
                 round(r["wounds"] / SIMULATIONS, 2),
