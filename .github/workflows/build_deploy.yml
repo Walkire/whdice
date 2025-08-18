@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   build:
+    if: github.ref_type == 'tag' &&
+        github.actor == 'Walkire'
     runs-on: windows-latest
 
     steps:
