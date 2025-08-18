@@ -1,0 +1,8 @@
+How to run unit tests
+
+`python -m unittest tests.test_sim_functions`
+
+How to run application locally
+
+`python -m pip install`
+`py ./run`
