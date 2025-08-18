@@ -4,10 +4,9 @@ import re
 from enums import TkType
 from classes.data import Data
 
-SHORTHAND_NOTATION = r'^d(\d+)$'
-DIE_NOTATION = r'^(\d+)d(\d+)([+-]\d+)?$'
+DIE_NOTATION = r'^(\d*)d(\d+)([+-]\d+)?$'
 def has_notation(dice):
-    return bool(re.match(SHORTHAND_NOTATION, str(dice), re.IGNORECASE) or re.match(DIE_NOTATION, str(dice), re.IGNORECASE))
+    return bool(re.match(DIE_NOTATION, str(dice), re.IGNORECASE))
 
 def get_var(entry):
     return entry.var() if hasattr(entry, "var") else entry
@@ -49,6 +48,9 @@ def build_form(fields, target_frame):
         entry.grid(**entry_style)
 
 def build_weapon_string(weapon: Data):
+    if weapon.name:
+        return f"{weapon.name}"
+
     return (
         f"A: {weapon.attacks} | "
         f"WS: {weapon.score} | "
