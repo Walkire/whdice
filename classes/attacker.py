@@ -5,6 +5,7 @@ from classes.binder import TinkerBinder
 from classes.data import Data
 
 DEFAULTS = {
+    "name": "",
     "attacks": "6",
     "score": 3,
     "strength": 5,
@@ -26,6 +27,8 @@ DEFAULTS = {
 
 class Attacker:
     def __init__(self, main_frame, mod_frame):
+        self.name = TinkerBinder(tk.StringVar, value=DEFAULTS['name'])
+        
         self.attacks = TinkerBinder(tk.StringVar, value=DEFAULTS['attacks'])
         self.score = TinkerBinder(tk.IntVar, value=DEFAULTS['score'])
         self.strength = TinkerBinder(tk.IntVar,value=DEFAULTS['strength'])
@@ -53,6 +56,7 @@ class Attacker:
 
     def buildForm(self):
         build_form([
+            {"label": "Name:", "entry": self.name, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Attacks:", "entry": self.attacks, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Attack Score:", "entry": self.score, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Strength:", "entry": self.strength, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},

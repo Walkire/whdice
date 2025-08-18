@@ -144,7 +144,7 @@ def run_simulation():
         result_window.title("Simulation Results")
 
         #Summary Table
-        columns = ("Attacks", "Hits", "Wounds", "Saves", "Damage", "After FNP", "Kills")
+        columns = ("Name", "Attacks", "Hits", "Wounds", "After Saves", "Damage", "After FNP", "Kills")
         tree = ttk.Treeview(result_window, columns=columns, show="headings", height=5)
         tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
@@ -156,6 +156,7 @@ def run_simulation():
 
         for i, r in enumerate(results):
             row_data = (
+                f"{r["weapon"].name}" if r["weapon"].name else "-",
                 round(r["attacks"] / SIMULATIONS, 2),
                 "N/A" if r["weapon"].torrent else round(r["hits"] / SIMULATIONS, 2),
                 round(r["wounds"] / SIMULATIONS, 2),
@@ -187,7 +188,8 @@ def run_simulation():
             details.delete("1.0", tk.END)
 
             details_message = f"{global_summary}\n\n"
-            # details_message += f"Weapon: {weapon_result['weapon'].name}\n"
+            if weapon_result['weapon'].name:
+                details_message += f"Weapon: {weapon_result['weapon'].name}\n"
             details_message += f"-- With {weapon_result['to_wound']} to wound --\n"
             if weapon_result["weapon"].sustained_hits and weapon_result["weapon"].sustained_hits != "0":
                 details_message += f"Sustained Hits: {weapon_result['sustained'] / SIMULATIONS:.2f}\n"

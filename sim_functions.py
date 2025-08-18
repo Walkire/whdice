@@ -1,7 +1,7 @@
 import random
 import re
 from enums import MinusDamageType, MinusWoundType, RerollType
-from utils import has_notation, SHORTHAND_NOTATION, DIE_NOTATION, bad_roll
+from utils import has_notation, DIE_NOTATION, bad_roll
 
 # Function to simulate a dice roll with a specified number of sides.
 def roll(num_sides = 6):
@@ -9,24 +9,22 @@ def roll(num_sides = 6):
 
 # Check if the input is a string representing a dice roll or a numeric value
 # and roll the dice accordingly. If it's a numeric value, return it as is.
-def check_and_roll_numeric(dice):
+def check_and_roll_numeric(dice) -> int:
     if not isinstance(dice, str):
         dice = str(dice)
 
     if has_notation(dice):
-        if re.match(SHORTHAND_NOTATION, dice, re.IGNORECASE):
-            num_sides = int(re.search(r'(\d+)', dice).group(1))
-            result = roll(num_sides)
-            return result
-        elif re.match(DIE_NOTATION, dice, re.IGNORECASE):
+        if re.match(DIE_NOTATION, dice, re.IGNORECASE):
             match = re.search(DIE_NOTATION, dice)
-            num_dice = int(match.group(1)) or 1
-            num_sides = int(match.group(2))
+            num_dice = int(match.group(1)) if match.group(1) else 1
+            num_sides = int(match.group(2)) if match.group(2) else 6
             modifier = int(match.group(3)) if match.group(3) else 0
             result = sum(roll(num_sides) for _ in range(num_dice)) + modifier
             return result
     else:
-        return int(dice) if isinstance(dice, str) and dice.isnumeric() else dice
+        if isinstance(dice, str) and not dice.isnumeric():
+            raise ValueError(f"Dice '{dice}' is in the wrong format, please use proper die notation")
+        return int(dice) if isinstance(dice, str) else dice
 
 # Calculate the number of successes based on the number of dice rolled,
 # the success threshold, and various reroll options.

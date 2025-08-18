@@ -40,9 +40,23 @@ class TestCheckAndRollFunction(unittest.TestCase):
 
     # Test that shorthand notation will roll correctly
     @patch('sim_functions.roll', return_value=4)
-    def test_check_and_roll_numeric_shorthand_notation(self, mock_roll):
+    def test_check_and_roll_numeric_shorthand_notation_with_mod(self, mock_roll):
         result = sim_functions.check_and_roll_numeric("d6")
         self.assertEqual(result, 4)
+        
+    # Test that shorthand notation with mod will roll correctly
+    @patch('sim_functions.roll', return_value=2)
+    def test_check_and_roll_numeric_shorthand_notation(self, mock_roll):
+        result = sim_functions.check_and_roll_numeric("d6+3")
+        self.assertEqual(result, 5)
+
+    # Test that shorthand notation with mod will roll correctly
+    @patch('sim_functions.roll', return_value=2)
+    def test_check_and_roll_numeric_bad_format(self, mock_roll):
+        with self.assertRaises(ValueError) as cm:
+            sim_functions.check_and_roll_numeric("6d+3")
+
+        self.assertIn("wrong format", str(cm.exception))
 
     # Test that long form dice notation will work
     @patch('sim_functions.roll', return_value=3)
