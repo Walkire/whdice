@@ -30,7 +30,7 @@ jobs:
         python -m pyinstaller --onefile run.py
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: whdice-${{ github.ref_name }}
         path: dist/run.exe
