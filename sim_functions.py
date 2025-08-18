@@ -145,7 +145,7 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
         
     return calc_success(wounds, final_save, True) 
 
-def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value) -> int | list:
+def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value) -> list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
@@ -176,7 +176,7 @@ def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDama
         damage_list.append(check_and_roll_numeric(damage))
     return damage_list if return_as_list else sum(damage_list)
 
-def calc_feel_no_pain(damage, fnp = 0) -> int | list:
+def calc_feel_no_pain(damage, fnp = 0) -> list:
     if fnp > 6 or fnp <= 0:
         return damage
     if fnp == 1:
