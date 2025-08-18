@@ -15,7 +15,7 @@ Clone the repository
 
 Run the application locally:
 navigate to the root and run
-> py ./run.py
+`py ./run.py`
 
 🖥️ Usage
 Launch the GUI and input attacker and defender stats.
