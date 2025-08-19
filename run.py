@@ -49,12 +49,12 @@ def run_simulation():
             })
 
         for _ in range(SIMULATIONS):
+            last_remainder = 0
+            total_kills = 0
             for i, weapon in enumerate(weapons_to_use):
                 added_saves = 0
                 added_wounds = 0
                 added_damage = 0
-                last_remainder = 0
-                total_kills = 0
                 
                 results[i]["to_wound"] = calc_to_wound(weapon.strength, DEFENDER.toughness, weapon.plus_wound, DEFENDER.minus_wound)
                      
