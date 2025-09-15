@@ -12,6 +12,7 @@ class RerollType(Enum):
     NO_REROLL = 'None'
     REROLL_ONE = 'Reroll Ones'
     REROLL_ALL = 'Reroll All'
+    FISH_ROLLS = 'Fish Rolls'
     
 class MinusDamageType(Enum):
     NO_MINUS = 'None'

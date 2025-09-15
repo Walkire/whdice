@@ -98,6 +98,18 @@ class TestCalcSuccessFunction(unittest.TestCase):
         mock_roll.side_effect = [1, 2, 6, 1, 5, 6, 3]  # Initial + rerolls for ones
         result = sim_functions.calc_success(5, success=5, reroll_ones=True)
         self.assertEqual(result, (3, 2))
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_fish_rerolls(self, mock_roll):
+        mock_roll.side_effect = [6, 2, 6, 1, 5, 6, 3, 3]  # Initial + rerolls for non crit
+        result = sim_functions.calc_success(5, success=5, fish_rolls=True)
+        self.assertEqual(result, (3, 3))
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_fish_rerolls_with_crit_change(self, mock_roll):
+        mock_roll.side_effect = [4, 2, 4, 1, 5, 6, 3]  # Initial + rerolls for non crit
+        result = sim_functions.calc_success(5, success=5, fish_rolls=True, crit_value=4)
+        self.assertEqual(result, (4, 4))
 
     @patch('sim_functions.roll')
     def test_calc_success_success_zero(self, mock_roll):
