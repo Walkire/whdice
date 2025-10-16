@@ -125,10 +125,13 @@ def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_h
 def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6, fish_rolls = False) -> int:
     return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, fish_rolls,crit_wound)
 
-def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
+def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False, cover = False) -> int:
     #modify the saves ignoring rules
     final_save = save
     if plus_save:
+        final_save -= 1
+        
+    if cover:
         final_save -= 1
     final_save += ap
 

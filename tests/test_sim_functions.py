@@ -193,6 +193,13 @@ class TestCalcSavesFunction(unittest.TestCase):
         result = sim_functions.calc_saves(wounds=5, save=3)
         self.assertEqual(result, 5)
         mock_calc_success.assert_called_with(5, 3, True)
+        
+    @patch('sim_functions.calc_success')
+    def test_calc_saves_cover(self, mock_calc_success):
+        mock_calc_success.return_value = 5
+        result = sim_functions.calc_saves(wounds=5, save=4, cover=True)
+        self.assertEqual(result, 5)
+        mock_calc_success.assert_called_with(5, 3, True)
 
 class TestCalcDamageFunction(unittest.TestCase):
     def test_calc_damage_no_modifiers(self):
