@@ -1,6 +1,6 @@
 import tkinter as tk
 from utils import build_form
-from enums import TkType, MinusDamageType, MinusWoundType
+from enums import TkType, MinusDamageType, MinusWoundType, RerollType
 from classes.binder import TinkerBinder
 from classes.data import Data
 
@@ -13,6 +13,7 @@ DEFAULTS = {
     "model_count": 10,
     "minus_damage": MinusDamageType.NO_MINUS.value,
     "minus_wound": MinusWoundType.NO_MINUS.value,
+    "reroll_save": RerollType.NO_REROLL.value,
     "plus_save": False,
     "cover": False
 }
@@ -28,6 +29,7 @@ class Defender:
 
         self.minus_damage = TinkerBinder(tk.StringVar, value=DEFAULTS['minus_damage'])
         self.minus_wound = TinkerBinder(tk.StringVar, value=DEFAULTS['minus_wound'])
+        self.reroll_save = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_save'])
         self.plus_save = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_save'])
         self.cover = TinkerBinder(tk.IntVar, value=DEFAULTS['cover'])
 
@@ -52,6 +54,7 @@ class Defender:
         build_form([
             {"label": "Damage reduction", "entry": self.minus_damage, "options": MinusDamageType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Wound reduction", "entry": self.minus_wound, "options": MinusWoundType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Reroll Save", "entry": self.reroll_save, "options": RerollType, "exclude": [RerollType.FISH_ROLLS], "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "+1 Save", "entry": self.plus_save, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Cover", "entry": self.cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         ], self.modifier_frame)

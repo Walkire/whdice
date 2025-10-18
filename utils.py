@@ -14,6 +14,7 @@ def get_var(entry):
 # fields
 # label: String label for the field
 # entry: value for the field
+# exclude: removes value from options menu
 # type: Tk field type
 # style: object, styles to apply to the field
 def build_form(fields, target_frame):
@@ -32,7 +33,11 @@ def build_form(fields, target_frame):
             needs_label = False
 
         elif field["type"] == TkType.OPTIONMENU:
-            options = [opt.value for opt in field["options"]]
+            exclude = field.get("exclude", [])
+            if exclude:
+                options = [opt.value for opt in field["options"] if opt not in exclude]
+            else:
+                options = [opt.value for opt in field["options"]]
             entry = tk.OptionMenu(target_frame, get_var(field['entry']), *options)
             
         elif field["type"] == TkType.LISTBOX:
