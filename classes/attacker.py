@@ -21,6 +21,7 @@ DEFAULTS = {
     "lethal_hits": False,
     "devestating_wounds": False,
     "blast": False,
+    "ignore_cover": False,
     "plus_wound": False,
     "plus_hit": False
 }
@@ -45,6 +46,7 @@ class Attacker:
         self.lethal_hits = TinkerBinder(tk.IntVar, value=DEFAULTS['lethal_hits'])
         self.devestating_wounds = TinkerBinder(tk.IntVar, value=DEFAULTS['devestating_wounds'])
         self.blast = TinkerBinder(tk.IntVar, value=DEFAULTS['blast'])
+        self.ignore_cover = TinkerBinder(tk.IntVar, value=DEFAULTS['ignore_cover'])
         self.plus_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_wound'])
         self.plus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_hit'])
 
@@ -77,6 +79,7 @@ class Attacker:
             {"label": "Torrent", "entry": self.torrent, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Blast", "entry": self.blast, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Devastating Wounds", "entry": self.devestating_wounds, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Ignore Cover", "entry": self.ignore_cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Hit:", "entry": self.critical_hit, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Wound:", "entry": self.critical_wound, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}}
         ], self.modifier_frame)

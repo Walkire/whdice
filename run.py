@@ -109,7 +109,7 @@ def run_simulation():
                     invuln=DEFENDER.invuln, 
                     ap=weapon.ap,
                     plus_save=DEFENDER.plus_save,
-                    cover=DEFENDER.cover,
+                    cover=DEFENDER.cover and not ATTACKER.ignore_cover,
                     reroll_save=DEFENDER.reroll_save
                 )
                 results[i]["saves"] += previous_dice
