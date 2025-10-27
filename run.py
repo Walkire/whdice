@@ -49,12 +49,12 @@ def run_simulation():
             })
 
         for _ in range(SIMULATIONS):
+            last_remainder = 0
+            total_kills = 0
             for i, weapon in enumerate(weapons_to_use):
                 added_saves = 0
                 added_wounds = 0
                 added_damage = 0
-                last_remainder = 0
-                total_kills = 0
                 
                 results[i]["to_wound"] = calc_to_wound(weapon.strength, DEFENDER.toughness, weapon.plus_wound, DEFENDER.minus_wound)
                      
@@ -72,7 +72,8 @@ def run_simulation():
                         reroll_hit=weapon.reroll_hits == RerollType.REROLL_ALL.value,
                         reroll_hit_one=weapon.reroll_hits == RerollType.REROLL_ONE.value,
                         crit_hit=weapon.critical_hit,
-                        plus_hit=weapon.plus_hit
+                        plus_hit=weapon.plus_hit,
+                        fish_rolls=weapon.reroll_hits == RerollType.FISH_ROLLS.value
                     )
 
                     # calc special crits
@@ -92,7 +93,8 @@ def run_simulation():
                     to_wound=results[i]["to_wound"],
                     reroll_wound=weapon.reroll_wounds == RerollType.REROLL_ALL.value, 
                     reroll_wound_one=weapon.reroll_wounds == RerollType.REROLL_ONE.value, 
-                    crit_wound=weapon.critical_wound
+                    crit_wound=weapon.critical_wound,
+                    fish_rolls=weapon.reroll_wounds == RerollType.FISH_ROLLS.value
                 )
                 results[i]["wounds"] += previous_dice
                 if weapon.devestating_wounds:
@@ -106,7 +108,9 @@ def run_simulation():
                     save=DEFENDER.save, 
                     invuln=DEFENDER.invuln, 
                     ap=weapon.ap,
-                    plus_save=DEFENDER.plus_save
+                    plus_save=DEFENDER.plus_save,
+                    cover=DEFENDER.cover and not ATTACKER.ignore_cover,
+                    reroll_save=DEFENDER.reroll_save
                 )
                 results[i]["saves"] += previous_dice
                 
@@ -223,7 +227,6 @@ def save_attacker():
     current_weapon = ATTACKER.getValues()
     WEAPONS.append(current_weapon)
     refresh_weapon_list()
-    ATTACKER.resetValues()
 
 def delete_selected_weapon():
     # Remove selected weapon(s) from WEAPONS list and refresh UI

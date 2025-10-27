@@ -98,6 +98,18 @@ class TestCalcSuccessFunction(unittest.TestCase):
         mock_roll.side_effect = [1, 2, 6, 1, 5, 6, 3]  # Initial + rerolls for ones
         result = sim_functions.calc_success(5, success=5, reroll_ones=True)
         self.assertEqual(result, (3, 2))
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_fish_rerolls(self, mock_roll):
+        mock_roll.side_effect = [6, 2, 6, 1, 5, 6, 3, 3]  # Initial + rerolls for non crit
+        result = sim_functions.calc_success(5, success=5, fish_rolls=True)
+        self.assertEqual(result, (3, 3))
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_fish_rerolls_with_crit_change(self, mock_roll):
+        mock_roll.side_effect = [4, 2, 4, 1, 5, 6, 3]  # Initial + rerolls for non crit
+        result = sim_functions.calc_success(5, success=5, fish_rolls=True, crit_value=4)
+        self.assertEqual(result, (4, 4))
 
     @patch('sim_functions.roll')
     def test_calc_success_success_zero(self, mock_roll):
@@ -109,6 +121,18 @@ class TestCalcSuccessFunction(unittest.TestCase):
         mock_roll.side_effect = [1, 2, 6, 1, 5]
         result = sim_functions.calc_success(5, success=2, crit_value=5)
         self.assertEqual(result, (3, 2)) 
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_reroll_all_saves(self, mock_roll):
+        mock_roll.side_effect = [2, 3, 6, 1, 5, 6, 4, 3]  # Initial + rerolls
+        result = sim_functions.calc_success(5, success=4, invert=True, reroll_all=True)
+        self.assertEqual(result, (1, 2))
+        
+    @patch('sim_functions.roll')
+    def test_calc_success_reroll_one_save(self, mock_roll):
+        mock_roll.side_effect = [4, 2, 6, 1, 3, 5]  # Initial + rerolls
+        result = sim_functions.calc_success(5, success=3, invert=True, reroll_ones=True)
+        self.assertEqual(result, (1, 1))
 
 class TestCalcWoundFunction(unittest.TestCase):
     # 0 strength should give you a 6 to wound
@@ -152,35 +176,42 @@ class TestCalcSavesFunction(unittest.TestCase):
         mock_calc_success.return_value = 3
         result = sim_functions.calc_saves(wounds=5, save=4, ap=0, plus_save=True)
         self.assertEqual(result, 3)
-        mock_calc_success.assert_called_with(5, 3, True) # final save is 3
+        mock_calc_success.assert_called_with(5, 3, True, False, False) # final save is 3
 
     @patch('sim_functions.calc_success')
     def test_calc_saves_invuln_better_than_save(self, mock_calc_success):
         mock_calc_success.return_value = 2
         result = sim_functions.calc_saves(wounds=4, save=5, ap=1, invuln=4)
         self.assertEqual(result, 2)
-        mock_calc_success.assert_called_with(4, 4, True) # final save is the invuln
+        mock_calc_success.assert_called_with(4, 4, True, False, False) # final save is the invuln
 
     @patch('sim_functions.calc_success')
     def test_calc_saves_final_save_cannot_be_better_than_3(self, mock_calc_success):
         mock_calc_success.return_value = 1
         result = sim_functions.calc_saves(wounds=2, save=3, plus_save = True)
         self.assertEqual(result, 1)
-        mock_calc_success.assert_called_with(2, 3, True)
+        mock_calc_success.assert_called_with(2, 3, True, False, False)
 
     @patch('sim_functions.calc_success')
     def test_calc_saves_base_save_better_than_3_allows_better_final_save(self, mock_calc_success):
         mock_calc_success.return_value = 4
         result = sim_functions.calc_saves(wounds=6, save=2, ap=1, plus_save = True)
         self.assertEqual(result, 4)
-        mock_calc_success.assert_called_with(6, 2, True)
+        mock_calc_success.assert_called_with(6, 2, True, False, False)
 
     @patch('sim_functions.calc_success')
     def test_calc_saves_no_modifiers(self, mock_calc_success):
         mock_calc_success.return_value = 5
         result = sim_functions.calc_saves(wounds=5, save=3)
         self.assertEqual(result, 5)
-        mock_calc_success.assert_called_with(5, 3, True)
+        mock_calc_success.assert_called_with(5, 3, True, False, False)
+        
+    @patch('sim_functions.calc_success')
+    def test_calc_saves_cover(self, mock_calc_success):
+        mock_calc_success.return_value = 5
+        result = sim_functions.calc_saves(wounds=5, save=4, cover=True)
+        self.assertEqual(result, 5)
+        mock_calc_success.assert_called_with(5, 3, True, False, False)
 
 class TestCalcDamageFunction(unittest.TestCase):
     def test_calc_damage_no_modifiers(self):

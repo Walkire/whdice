@@ -31,11 +31,11 @@ def check_and_roll_numeric(dice) -> int:
 ## Parameters:
 # - dice: Number of dice to roll.
 # - success: The success threshold (minimum value to count as a success).
-# - invert: If True, counts rolls below the success threshold as successes.
+# - invert: If True, counts rolls below the success threshold as successes (true for saves mostly).
 # - reroll_all: If True, rerolls all dice that did not succeed.
 # - reroll_ones: If True, rerolls only the dice that rolled a one.
 # - crit_value: The value that counts as a critical success (default is 6).
-def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones = False, crit_value = 6) -> tuple[int, int]:
+def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones = False, fish_rolls = False, crit_value = 6) -> tuple[int, int]:
     total = 0
     ones = 0
     reroll_total = 0
@@ -46,10 +46,10 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     
     for _ in range(dice):
         result = roll()
-        #ignore tracking ones and crits on saves
-        if result == 1 and not invert:
+        
+        if result == 1:
             ones += 1
-        if result >= crit_value and not invert:
+        if result >= crit_value:
             crits += 1
             
         #not saves
@@ -59,12 +59,24 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
         elif invert and result < success:
             total += 1
             
-    if reroll_all:
-        reroll_total, reroll_crits = calc_success(dice - total, success, invert, crit_value = crit_value)
-    elif reroll_ones:
-        reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
-    
-    return reroll_total + total, crits + reroll_crits
+    if invert:
+        if reroll_all:
+            total, reroll_crits = calc_success(total, success, invert, crit_value = crit_value)
+        elif reroll_ones:
+            reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
+            total = reroll_total + total - ones
+        return total, crits + reroll_crits
+        
+    else:
+        if reroll_all:
+            reroll_total, reroll_crits = calc_success(dice - total, success, invert, crit_value = crit_value)
+        elif reroll_ones:
+            reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
+        elif fish_rolls:
+            total = crits
+            reroll_total, reroll_crits = calc_success(dice - crits, success, invert, crit_value = crit_value)
+        
+        return reroll_total + total, crits + reroll_crits
 
 def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value) -> int:
     if strength == 0:
@@ -111,22 +123,25 @@ def calc_sustained_hits(crits, sustained_hits):
     
     return extra_hits
 
-def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False):
+def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False, fish_rolls = False):
     if plus_hit:
         score -= 1
     # to hit cannot be better than 2
     if score < 2:
         score = 2
         
-    return calc_success(atk, score, False, reroll_hit, reroll_hit_one, crit_hit)
+    return calc_success(atk, score, False, reroll_hit, reroll_hit_one, fish_rolls, crit_hit)
 
-def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6) -> int:
-    return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, crit_wound)
+def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6, fish_rolls = False) -> int:
+    return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, fish_rolls,crit_wound)
 
-def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
+def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False, cover = False, reroll_save = RerollType.NO_REROLL.value) -> int:
     #modify the saves ignoring rules
     final_save = save
     if plus_save:
+        final_save -= 1
+        
+    if cover:
         final_save -= 1
     final_save += ap
 
@@ -141,7 +156,9 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False) -> int:
     if final_save < 3 and save > 2:
         final_save = 3
         
-    return calc_success(wounds, final_save, True) 
+    reroll_ones = reroll_save == RerollType.REROLL_ONE.value
+    reroll_all = reroll_save == RerollType.REROLL_ALL.value
+    return calc_success(wounds, final_save, True, reroll_all, reroll_ones)
 
 def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value) -> list:
     # Warhammer calculates damage in order:
