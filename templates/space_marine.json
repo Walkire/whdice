@@ -1,0 +1,11 @@
+{
+  "name": "10 Space marines",
+  "toughness": 4,
+  "save": 3,
+  "invuln": 0,
+  "wounds": 2,
+  "feel_no_pain": 0,
+  "model_count": 10,
+  "plus_save": false,
+  "cover": false
+}

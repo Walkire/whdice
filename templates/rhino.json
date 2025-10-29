@@ -1,0 +1,11 @@
+{
+  "name": "Rhino",
+  "toughness": 9,
+  "save": 3,
+  "invuln": 0,
+  "wounds": 10,
+  "feel_no_pain": 0,
+  "model_count": 1,
+  "plus_save": false,
+  "cover": false
+}

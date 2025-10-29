@@ -1,0 +1,11 @@
+{
+  "name": "Land Raider",
+  "toughness": 12,
+  "save": 2,
+  "invuln": 0,
+  "wounds": 16,
+  "feel_no_pain": 0,
+  "model_count": 1,
+  "plus_save": false,
+  "cover": false
+}

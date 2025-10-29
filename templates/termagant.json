@@ -1,0 +1,11 @@
+{
+  "name": "20 Termagants",
+  "toughness": 3,
+  "save": 5,
+  "invuln": 0,
+  "wounds": 1,
+  "feel_no_pain": 0,
+  "model_count": 20,
+  "plus_save": false,
+  "cover": false
+}

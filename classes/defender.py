@@ -19,7 +19,7 @@ DEFAULTS = {
 }
 
 class Defender:
-    def __init__(self, main_frame, mod_frame):
+    def __init__(self, main_frame = None, mod_frame = None):
         self.toughness = TinkerBinder(tk.IntVar, value=DEFAULTS['toughness'])
         self.save = TinkerBinder(tk.IntVar, value=DEFAULTS['save'])
         self.invuln = TinkerBinder(tk.IntVar, value=DEFAULTS['invuln'])
@@ -33,11 +33,12 @@ class Defender:
         self.plus_save = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_save'])
         self.cover = TinkerBinder(tk.IntVar, value=DEFAULTS['cover'])
 
-        self.main_frame = main_frame
-        self.modifier_frame = mod_frame
+        if not main_frame is None and not mod_frame is None:
+            self.main_frame = main_frame
+            self.modifier_frame = mod_frame
 
-        self.buildForm()
-        self.buildModForm()
+            self.buildForm()
+            self.buildModForm()
 
     def buildForm(self):
         build_form([
