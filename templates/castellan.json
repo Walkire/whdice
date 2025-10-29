@@ -1,0 +1,11 @@
+{
+  "name": "Castellan",
+  "toughness": 12,
+  "save": 3,
+  "invuln": 5,
+  "wounds": 28,
+  "feel_no_pain": 0,
+  "model_count": 1,
+  "plus_save": false,
+  "cover": false
+}

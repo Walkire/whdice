@@ -3,6 +3,7 @@ from tkinter import ttk
 import re
 from enums import TkType
 from classes.data import Data
+import os, json
 
 DIE_NOTATION = r'^(\d*)d(\d+)([+-]\d+)?$'
 def has_notation(dice):
@@ -92,3 +93,50 @@ def bad_roll(roll, notation, threshold) -> bool:
     cutoff = int(range_size * threshold)
     
     return roll <= (range_min + cutoff - 1)
+
+# Returns formatted text showing full per-weapon breakdown
+def format_weapon_details(results, defender, wipe_percent, simulations):
+    lines = []
+    lines.append(f"Chance unit is killed:\n----------------------\n{wipe_percent}%\n")
+
+    for r in results:
+        weapon = r["weapon"]
+        name = weapon.name if weapon.name else "-"
+        lines.append(f"Weapon: {name}")
+        lines.append(f"-- With {r['to_wound']} to wound --")
+
+        if weapon.sustained_hits and weapon.sustained_hits != "0":
+            lines.append(f"Sustained Hits: {r['sustained'] / simulations:.2f}")
+        if weapon.lethal_hits:
+            lines.append(f"Lethal Hits: {r['crit_hit'] / simulations:.2f}")
+        if weapon.devestating_wounds:
+            lines.append(f"Devastating Wounds: {r['crit_wound'] / simulations:.2f}")
+        if weapon.blast:
+            lines.append(f"Blast: {int((defender.model_count / 5) // 1)} extra attacks")
+
+        fnp_value = f"{r['fnp'] / simulations:.2f}" if defender.feel_no_pain else "-"
+        kills_value = f"{r['kills'] / simulations:.2f}" if defender.model_count > 1 else "-"
+
+        lines.append(
+            f"Attacks: {r['attacks'] / simulations:.2f}\n"
+            f"Hits: {'N/A' if weapon.torrent else round(r['hits'] / simulations, 2)}\n"
+            f"Wounds: {r['wounds'] / simulations:.2f}\n"
+            f"After Saves: {r['saves'] / simulations:.2f}\n"
+            f"Damage: {r['damage'] / simulations:.2f}\n"
+            f"After FNP: {fnp_value}\n"
+            f"Kills: {kills_value}"
+        )
+
+    return "\n".join(lines)
+
+def load_templates(folder="templates"):
+    templates = []
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    for filename in os.listdir(folder):
+        if filename.endswith(".json"):
+            path = os.path.join(folder, filename)
+            with open(path, "r") as f:
+                data = json.load(f)
+                templates.append(data)
+    return templates

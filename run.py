@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from sim_functions import calc_hits, calc_damage, calc_to_wound, calc_attacks, calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
-from enums import RerollType
 from classes.attacker import Attacker
 from classes.defender import Defender
-from utils import build_weapon_string
+from utils import build_weapon_string, format_weapon_details, load_templates
+from simulation import simulate
 
 ATTACKER = None
 DEFENDER = None
@@ -17,149 +16,79 @@ WEAPON_LISTBOX = None
 
 SIMULATIONS = 100000
 
+# Generic reusable result viewer.
+# - title: string window title
+# - columns: list of column names
+# - rows: list of tuples or dicts (each one row of data)
+# - detail_callback: function(tree, details_widget, selection) -> None
+
+def show_results_window(title, columns, rows, detail_callback):
+    result_window = tk.Toplevel()
+    result_window.title(title)
+
+    tree = ttk.Treeview(result_window, columns=columns, show="headings", height=8)
+    tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+
+    # Configure sorting behavior
+    def sort_column(col, reverse=False):
+        # Extract data and sort
+        data = [(tree.set(child, col), child) for child in tree.get_children("")]
+        try:
+            data.sort(key=lambda t: float(t[0]), reverse=reverse)
+        except ValueError:
+            data.sort(key=lambda t: t[0], reverse=reverse)
+
+        # Reorder tree items
+        for index, (_, iid) in enumerate(data):
+            tree.move(iid, "", index)
+
+        # Toggle next sort direction
+        tree.heading(col, command=lambda: sort_column(col, not reverse))
+
+    for col in columns:
+        tree.heading(col, text=col, command=lambda _col=col: sort_column(_col, False))
+        tree.column(col, anchor="center", width=120)
+
+    # Insert rows
+    for i, row in enumerate(rows):
+        if isinstance(row, dict):
+            values = [row.get(col, "-") for col in columns]
+        else:
+            values = row
+        tree.insert("", "end", iid=str(i), values=values)
+
+    # Details panel
+    details = tk.Text(result_window, wrap="word", height=10, width=70, padx=5, pady=5)
+    details.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+    details.config(state="disabled", font=("Consolas", 11))
+
+    def on_select(event):
+        selected = tree.selection()
+        if not selected:
+            return
+        selection_id = int(selected[0])
+        detail_callback(tree, details, selection_id)
+
+    tree.bind("<<TreeviewSelect>>", on_select)
+
+    result_window.grid_rowconfigure(1, weight=1)
+    result_window.grid_columnconfigure(0, weight=1)
+
+    return result_window
+
 def run_simulation():
-    global WEAPONS
-    
+    global WEAPONS, ATTACKER, SIMULATIONS
+
     try:
         if not (ATTACKER or WEAPONS) or not DEFENDER:
             raise Exception("No unit data was found")
 
-        UNITS_WIPED = 0
-        previous_dice = 0
-        
-        results = []
+        results, wipe_percent = simulate(ATTACKER, DEFENDER, WEAPONS, SIMULATIONS)
 
-        weapons_to_use = WEAPONS if WEAPONS else [ATTACKER.getValues()]
-        
-        for i, weapon in enumerate(weapons_to_use):
-            results.append({
-                "id": i,
-                "to_wound": 0,
-                "attacks": 0,
-                "hits": 0,
-                "wounds": 0,
-                "saves": 0,
-                "damage": 0,
-                "fnp": 0,
-                "kills": 0,
-                "sustained": 0,
-                "crit_hit": 0,
-                "crit_wound": 0,
-                "weapon": weapon
-            })
-
-        for _ in range(SIMULATIONS):
-            last_remainder = 0
-            total_kills = 0
-            for i, weapon in enumerate(weapons_to_use):
-                added_saves = 0
-                added_wounds = 0
-                added_damage = 0
-                
-                results[i]["to_wound"] = calc_to_wound(weapon.strength, DEFENDER.toughness, weapon.plus_wound, DEFENDER.minus_wound)
-                     
-                # calc attacks
-                previous_dice = calc_attacks(weapon.attacks)
-                if weapon.blast:
-                        previous_dice += int((DEFENDER.model_count / 5) // 1)
-                results[i]["attacks"] += previous_dice
-                
-                # calc hits
-                if not weapon.torrent:
-                    previous_dice, crits = calc_hits(
-                        atk=previous_dice,
-                        score=weapon.score,
-                        reroll_hit=weapon.reroll_hits == RerollType.REROLL_ALL.value,
-                        reroll_hit_one=weapon.reroll_hits == RerollType.REROLL_ONE.value,
-                        crit_hit=weapon.critical_hit,
-                        plus_hit=weapon.plus_hit,
-                        fish_rolls=weapon.reroll_hits == RerollType.FISH_ROLLS.value
-                    )
-
-                    # calc special crits
-                    if weapon.sustained_hits != "0":
-                        added_wounds = calc_sustained_hits(crits, weapon.sustained_hits)
-                        results[i]["sustained"] += added_wounds
-                    results[i]["hits"] += previous_dice
-                    if weapon.lethal_hits:
-                        added_saves = crits
-                        previous_dice -= crits
-                        
-                    results[i]["crit_hit"] += crits                
-                
-                # calc wound
-                previous_dice, crits = calc_wounds(
-                    hits=previous_dice + added_wounds, 
-                    to_wound=results[i]["to_wound"],
-                    reroll_wound=weapon.reroll_wounds == RerollType.REROLL_ALL.value, 
-                    reroll_wound_one=weapon.reroll_wounds == RerollType.REROLL_ONE.value, 
-                    crit_wound=weapon.critical_wound,
-                    fish_rolls=weapon.reroll_wounds == RerollType.FISH_ROLLS.value
-                )
-                results[i]["wounds"] += previous_dice
-                if weapon.devestating_wounds:
-                    added_damage = crits
-                    previous_dice -= crits
-                results[i]["crit_wound"] += crits
-                
-                # calc save
-                previous_dice, crits = calc_saves(
-                    wounds=previous_dice + added_saves, 
-                    save=DEFENDER.save, 
-                    invuln=DEFENDER.invuln, 
-                    ap=weapon.ap,
-                    plus_save=DEFENDER.plus_save,
-                    cover=DEFENDER.cover and not ATTACKER.ignore_cover,
-                    reroll_save=DEFENDER.reroll_save
-                )
-                results[i]["saves"] += previous_dice
-                
-                # calc damage
-                previous_dice = calc_damage(
-                    amt=previous_dice + added_damage, 
-                    damage=weapon.damage,
-                    return_as_list=True,
-                    minus_damage=DEFENDER.minus_damage,
-                    reroll_damage=weapon.reroll_damage
-                )
-                results[i]["damage"] += sum(previous_dice)
-
-                #calc feel no pain
-                previous_dice = calc_feel_no_pain(
-                    damage=previous_dice,
-                    fnp=DEFENDER.feel_no_pain
-                )
-                results[i]["fnp"] += sum(previous_dice)
-                
-                # calc kills
-                previous_dice, last_remainder = calc_kills(
-                    dmg_list=previous_dice,
-                    wounds=DEFENDER.wounds,
-                    remainder=last_remainder)
-                results[i]["kills"] += previous_dice
-                
-                total_kills += previous_dice
-            
-            if total_kills >= DEFENDER.model_count:
-                UNITS_WIPED += 1
-            
-        # Display results
-        result_window = tk.Toplevel()
-        result_window.title("Simulation Results")
-
-        #Summary Table
+        # Setup data
         columns = ("Name", "Attacks", "Hits", "Wounds", "After Saves", "Damage", "After FNP", "Kills")
-        tree = ttk.Treeview(result_window, columns=columns, show="headings", height=5)
-        tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, anchor="center", width=90)
-
-        wipe_percent = round(UNITS_WIPED / SIMULATIONS * 100, 2) if UNITS_WIPED > 0 else 0
-
-        for i, r in enumerate(results):
-            row_data = (
+        rows = [
+            (
                 r["weapon"].name if r["weapon"].name else "-",
                 round(r["attacks"] / SIMULATIONS, 2),
                 "N/A" if r["weapon"].torrent else round(r["hits"] / SIMULATIONS, 2),
@@ -169,49 +98,64 @@ def run_simulation():
                 round(r["fnp"] / SIMULATIONS, 2) if DEFENDER.feel_no_pain else "-",
                 round(r["kills"] / SIMULATIONS, 2) if DEFENDER.model_count > 1 else "-",
             )
-            tree.insert("", "end", iid=str(i), values=row_data)
+            for r in results
+        ]
 
-        #Details Section
-        details = tk.Text(result_window, wrap="word", height=10, width=70, padx=5, pady=5)
-        details.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
-
-        # Default details (global summary)
-        global_summary = f"Chance unit is killed:\n----------------------\n{wipe_percent}%"
-        details.insert("end", global_summary)
-        details.config(state="disabled", font=("Consolas", 11))
-
-        def show_details(event):
-            selected = tree.selection()
-            if not selected:
-                return
-
-            weapon_id = int(selected[0])
-            weapon_result = results[weapon_id]
-
+        def show_weapon_details(tree, details, selection_id):
+            text = format_weapon_details(results, DEFENDER, wipe_percent, SIMULATIONS)
             details.config(state="normal")
             details.delete("1.0", tk.END)
-
-            details_message = f"{global_summary}\n\n"
-            if weapon_result['weapon'].name:
-                details_message += f"Weapon: {weapon_result['weapon'].name}\n"
-            details_message += f"-- With {weapon_result['to_wound']} to wound --\n"
-            if weapon_result["weapon"].sustained_hits and weapon_result["weapon"].sustained_hits != "0":
-                details_message += f"Sustained Hits: {weapon_result['sustained'] / SIMULATIONS:.2f}\n"
-            if weapon_result["weapon"].lethal_hits:
-                details_message += f"Lethal Hits: {weapon_result['crit_hit'] / SIMULATIONS:.2f}\n"
-            if weapon_result["weapon"].devestating_wounds:
-                details_message += f"Devastating Wounds: {weapon_result['crit_wound'] / SIMULATIONS:.2f}\n"
-            if weapon_result["weapon"].blast:
-                details_message += f"Blast: {int((DEFENDER.model_count / 5) // 1)} extra attacks\n"
-            
-            details.insert("end", details_message)
+            details.insert("end", text)
             details.config(state="disabled")
 
-        tree.bind("<<TreeviewSelect>>", show_details)
+        show_results_window("Simulation Results", columns, rows, show_weapon_details)
 
-        # Make window resizable
-        result_window.grid_rowconfigure(1, weight=1)
-        result_window.grid_columnconfigure(0, weight=1)
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {str(e)}")
+        print(f"Line: {e.__traceback__.tb_lineno} - {str(e)}")
+
+        
+def compare_templates():
+    global ATTACKER, WEAPONS, SIMULATIONS
+    try:
+        templates = load_templates()
+        if not templates:
+            raise Exception("No templates found in /templates/ folder.")
+        if not (ATTACKER or WEAPONS):
+            raise Exception("No attacker or weapon data found")
+
+        summary = []
+        for data in templates:
+            defender = Defender() # Dont include UI for headless
+            for k, v in data.items():
+                setattr(defender, k, v)
+            results, wipe_percent = simulate(ATTACKER, defender, WEAPONS, SIMULATIONS)
+            avg_kills = sum(r["kills"] for r in results) / len(results) / SIMULATIONS
+            dmg = sum(r["damage"] for r in results) / len(results) / SIMULATIONS
+            summary.append({
+                "name": data.get("name", "Unnamed Template"),
+                "wipe": wipe_percent,
+                "dmg": dmg,
+                "avg": avg_kills,
+                "details": results
+            })
+
+        columns = ("Template", "Avg Kills", "Dmg", "Wipe %")
+        rows = [(s["name"], round(s["avg"], 2), round(s["dmg"], 2), s["wipe"]) for s in summary]
+
+        def show_template_details(tree, details, selection_id):
+            res = summary[selection_id]
+            details.config(state="normal")
+            details.delete("1.0", tk.END)
+            # Build a fake Defender for display so we can show correct wound/model data
+            defender = Defender()
+            for key, value in templates[selection_id].items():
+                setattr(defender, key, value)
+            text = format_weapon_details(res["details"], defender, res["wipe"], SIMULATIONS)
+            details.insert("end", text)
+            details.config(state="disabled")
+
+        show_results_window("Template Comparison", columns, rows, show_template_details)
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {str(e)}")
@@ -300,6 +244,10 @@ DEFENDER = Defender(defender_frame, defender_mod_frame)
 # Add simulation button
 run_button = ttk.Button(window, text="Run Simulation", command=run_simulation)
 run_button.grid(row=1, column=3, columnspan=1, pady=10)
+
+# Add simulation button
+run_button = ttk.Button(window, text="Check Templates", command=compare_templates)
+run_button.grid(row=1, column=2, columnspan=1, pady=10)
 
 # Start Tkinter main loop
 window.mainloop()

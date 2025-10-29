@@ -27,7 +27,7 @@ DEFAULTS = {
 }
 
 class Attacker:
-    def __init__(self, main_frame, mod_frame):
+    def __init__(self, main_frame = None, mod_frame = None):
         self.name = TinkerBinder(tk.StringVar, value=DEFAULTS['name'])
         
         self.attacks = TinkerBinder(tk.StringVar, value=DEFAULTS['attacks'])
@@ -50,11 +50,12 @@ class Attacker:
         self.plus_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_wound'])
         self.plus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_hit'])
 
-        self.main_frame = main_frame
-        self.modifier_frame = mod_frame
+        if not main_frame is None and not mod_frame is None:
+            self.main_frame = main_frame
+            self.modifier_frame = mod_frame
 
-        self.buildForm()
-        self.buildModForm()
+            self.buildForm()
+            self.buildModForm()
 
     def buildForm(self):
         build_form([
