@@ -23,7 +23,9 @@ DEFAULTS = {
     "blast": False,
     "ignore_cover": False,
     "plus_wound": False,
-    "plus_hit": False
+    "plus_hit": False,
+    "melta": False,
+    "melta_value": "0"
 }
 
 class Attacker:
@@ -37,6 +39,7 @@ class Attacker:
         self.damage = TinkerBinder(tk.StringVar, value=DEFAULTS['damage'])
         self.critical_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['critical_hit'])
         self.critical_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['critical_wound'])
+        self.melta_value = TinkerBinder(tk.StringVar, value=DEFAULTS['melta_value'])
 
         self.torrent = TinkerBinder(tk.IntVar, DEFAULTS['torrent'])
         self.reroll_hits = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_hits'])
@@ -49,6 +52,7 @@ class Attacker:
         self.ignore_cover = TinkerBinder(tk.IntVar, value=DEFAULTS['ignore_cover'])
         self.plus_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_wound'])
         self.plus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_hit'])
+        self.melta = TinkerBinder(tk.IntVar, value=DEFAULTS['melta'])
 
         if not main_frame is None and not mod_frame is None:
             self.main_frame = main_frame
@@ -64,7 +68,8 @@ class Attacker:
             {"label": "Attack Score:", "entry": self.score, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Strength:", "entry": self.strength, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "AP:", "entry": self.ap, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
-            {"label": "Damage:", "entry": self.damage, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}}
+            {"label": "Damage:", "entry": self.damage, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Melta:", "entry": self.melta_value, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
         ], self.main_frame)
 
 
@@ -80,6 +85,7 @@ class Attacker:
             {"label": "Torrent", "entry": self.torrent, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Blast", "entry": self.blast, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Devastating Wounds", "entry": self.devestating_wounds, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Melta", "entry": self.melta, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Ignore Cover", "entry": self.ignore_cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Hit:", "entry": self.critical_hit, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Wound:", "entry": self.critical_wound, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}}

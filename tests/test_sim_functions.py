@@ -235,7 +235,7 @@ class TestCalcDamageFunction(unittest.TestCase):
         self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=True), [2, 2, 2])
 
     def test_calc_damage_null_one_modifier(self):
-        self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=True, minus_damage=enums.MinusDamageType.NULL_ONE.value), [2, 2])
+        self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=True, null_damage = True), [0, 2, 2])
 
     def test_calc_damage_minus_one_modifier(self):
         self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=True, minus_damage=enums.MinusDamageType.MINUS_ONE.value), [1, 1, 1])
@@ -245,6 +245,17 @@ class TestCalcDamageFunction(unittest.TestCase):
 
     def test_calc_damage_zero_amt(self):
         self.assertEqual(sim_functions.calc_damage(0, damage=5, return_as_list=True), [])
+
+    @patch('sim_functions.check_and_roll_numeric')
+    def test_calc_damage_follow_order_of_operations(self, mock_roll):
+        mock_roll.side_effect = [12]
+        self.assertEqual(sim_functions.calc_damage(1, damage="1d6+6", return_as_list=True, null_damage = True, melta="3"), [3])
+
+    @patch('sim_functions.check_and_roll_numeric')
+    def test_calc_damage_follow_order_of_operations_2(self, mock_roll):
+        mock_roll.side_effect = [6, 5]
+        self.assertEqual(sim_functions.calc_damage(2, damage="1d6", return_as_list=True, null_damage = True, minus_damage=enums.MinusDamageType.MINUS_ONE.value, melta="3"), [2, 7])
+    
 
 class TestCalcKillsFunction(unittest.TestCase):
     def test_calc_kills_one_health(self):

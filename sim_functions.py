@@ -160,16 +160,15 @@ def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False, cover = 
     reroll_all = reroll_save == RerollType.REROLL_ALL.value
     return calc_success(wounds, final_save, True, reroll_all, reroll_ones)
 
-def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value) -> list:
+def calc_damage(amt, damage = 1, return_as_list = True, null_damage = False, minus_damage = MinusDamageType.NO_MINUS.value, reroll_damage = RerollType.NO_REROLL.value, melta = None) -> list:
     # Warhammer calculates damage in order:
     # Replace -> Division -> Multiplication -> Addition -> Subtraction
     damage_list = []
     minimum_roll = 100
     reroll_one = False
     roll_threshold = 0.2
+    has_nulled = False
     
-    if minus_damage == MinusDamageType.NULL_ONE.value:
-        amt -= 1
     if reroll_damage == RerollType.REROLL_ONE.value and has_notation(damage):
         reroll_one = True
 
@@ -180,10 +179,19 @@ def calc_damage(amt, damage = 1, return_as_list = True, minus_damage = MinusDama
             minimum_roll = d
         if reroll_damage == RerollType.REROLL_ALL.value and bad_roll(d, damage, threshold=roll_threshold):
             d = check_and_roll_numeric(damage)
-        if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1:
-            d -= 1
+        # Replace
+        if null_damage and has_nulled == False:
+            d = 0
+            has_nulled = True
+        # Division
         if minus_damage == MinusDamageType.MINUS_HALF.value:
             d = -(-d // 2)
+        # Addition
+        if melta != None:
+            d += int(melta)
+        # Subtraction
+        if minus_damage == MinusDamageType.MINUS_ONE.value and d > 1:
+            d -= 1
         damage_list.append(d)
         
     if reroll_one and bad_roll(minimum_roll, damage, threshold=roll_threshold):
