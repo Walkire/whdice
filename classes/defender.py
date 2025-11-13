@@ -3,6 +3,7 @@ from utils import build_form
 from enums import TkType, MinusDamageType, MinusWoundType, RerollType
 from classes.binder import TinkerBinder
 from classes.data import Data
+from classes.baseUnit import BaseUnit
 
 DEFAULTS = {
     "toughness": 3,
@@ -18,8 +19,9 @@ DEFAULTS = {
     "cover": False
 }
 
-class Defender:
+class Defender(BaseUnit):
     def __init__(self, main_frame = None, mod_frame = None):
+        super().__init__()
         self.toughness = TinkerBinder(tk.IntVar, value=DEFAULTS['toughness'])
         self.save = TinkerBinder(tk.IntVar, value=DEFAULTS['save'])
         self.invuln = TinkerBinder(tk.IntVar, value=DEFAULTS['invuln'])
@@ -61,15 +63,7 @@ class Defender:
         ], self.modifier_frame)
 
     def getValues(self):
-        values = {}
-        for attr_name in dir(self):
-            attr = getattr(self, attr_name)
-            if isinstance(attr, TinkerBinder):
-                values[attr_name] = attr.get()
-        return Data(**values)
+        return Data(**super().getValues())
     
     def resetValues(self):
-        for key, value in DEFAULTS.items():
-            attr = getattr(self, key, None)
-            if isinstance(attr, TinkerBinder):
-                attr.set(value)
+        super().resetValues(DEFAULTS)

@@ -14,11 +14,15 @@ def get_var(entry):
 
 # fields
 # label: String label for the field
-# entry: value for the field
+# entry (required): value for the field
 # exclude: removes value from options menu
-# type: Tk field type
+# depends_on: Tkinter variable that enables/disables field based on its value
+# type (required): Tk field type
 # style: object, styles to apply to the field
 def build_form(fields, target_frame):
+    widgets = []
+    conditional_widgets = {}
+    
     # Build the form dynamically
     for field in fields:
         needs_label = True
@@ -49,9 +53,29 @@ def build_form(fields, target_frame):
             label = ttk.Label(target_frame, text=field['label'])
             label_style = field.get('label_style', field.get('style', {}))
             label.grid(**label_style)
+            widgets.append(label)
 
         entry_style = field.get('entry_style', field.get('style', {}))
         entry.grid(**entry_style)
+        widgets.append(entry)
+        
+        # Handle conditional enable/disable
+        if 'depends_on' in field:
+            depends_on = field['depends_on']
+            key = id(depends_on)
+            if key not in conditional_widgets:
+                conditional_widgets[key] = {'obj': depends_on, 'widgets': []}
+            conditional_widgets[key]['widgets'].append(entry)
+            entry.config(state='disabled')
+    
+    return widgets, conditional_widgets
+
+def toggle_field_state(conditional_widgets, field_obj, enabled):
+    key = id(field_obj)
+    if key in conditional_widgets:
+        state = 'normal' if enabled else 'disabled'
+        for widget in conditional_widgets[key]['widgets']:
+            widget.config(state=state)
 
 def build_weapon_string(weapon: Data):
     if weapon.name:
