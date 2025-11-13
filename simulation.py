@@ -2,7 +2,7 @@ from sim_functions import (
     calc_hits, calc_damage, calc_to_wound, calc_attacks,
     calc_saves, calc_kills, calc_wounds, calc_feel_no_pain, calc_sustained_hits
 )
-from enums import RerollType
+from enums import RerollType, MinusDamageType
 
 # Core simulation logic
 # Returns (results, wipe_percent)
@@ -106,7 +106,9 @@ def simulate(attacker, defender, weapons, simulations):
                 damage=weapon.damage,
                 return_as_list=True,
                 minus_damage=defender.minus_damage,
-                reroll_damage=weapon.reroll_damage
+                null_damage=defender.minus_damage == MinusDamageType.NULL_ONE.value,
+                reroll_damage=weapon.reroll_damage,
+                melta=weapon.melta_value if weapon.melta else None
             )
             results[i]["damage"] += sum(previous_dice)
 
