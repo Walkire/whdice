@@ -123,12 +123,26 @@ def calc_sustained_hits(crits, sustained_hits):
     
     return extra_hits
 
-def calc_hits(atk, score = 0, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False, fish_rolls = False):
+def calc_hits(atk, score, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False, fish_rolls = False, stealth = False):
+    modifier = 0
     if plus_hit:
-        score -= 1
-    # to hit cannot be better than 2
+        modifier -= 1
+    if stealth:
+        modifier += 1
+        
+    # modifier cannot be better than -1 or worse than 1
+    if modifier > 1:
+        modifier = 1
+    if modifier < -1:
+        modifier = -1
+        
+    score += modifier
+        
+    # to hit cannot be better than 2 or worse then a crit
     if score < 2:
         score = 2
+    if score > crit_hit:
+        score = crit_hit
         
     return calc_success(atk, score, False, reroll_hit, reroll_hit_one, fish_rolls, crit_hit)
 

@@ -266,6 +266,31 @@ class TestCalcKillsFunction(unittest.TestCase):
     def test_calc_kills_has_remainder(self):
         damage = [2, 2, 2]
         self.assertEqual(sim_functions.calc_kills(dmg_list=damage, wounds=4, remainder=2), (2, 4))
+        
+class TestCalcHitFunction(unittest.TestCase):
+    @patch('sim_functions.roll')
+    def test_calc_hit(self, mock_roll):
+        mock_roll.side_effect = [5, 3, 2, 1, 6]  # Simulated dice rolls
+        result = sim_functions.calc_hits(atk=5, score=3)
+        self.assertEqual(result, (3, 1)) # 3 hits, 1 crit
+    
+    @patch('sim_functions.roll')
+    @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
+    def test_calc_hit_better_than_min(self, mock_calc_success, mock_roll):
+        mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
+        result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
+        self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
+        mock_calc_success.assert_called_with(5, 2, False, False, False, False, 6)
+        
+    @patch('sim_functions.roll')
+    @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
+    def test_calc_hit_worse_than_max(self, mock_calc_success, mock_roll):
+        mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
+        result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
+        self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
+        mock_calc_success.assert_called_with(5, 2, False, False, False, False, 6)
+        
+    
 
 if __name__ == '__main__':
     unittest.main()
