@@ -130,8 +130,8 @@ def compare_templates():
             for k, v in data.items():
                 setattr(defender, k, v)
             results, wipe_percent = simulate(ATTACKER, defender, WEAPONS, SIMULATIONS)
-            avg_kills = sum(r["kills"] for r in results) / len(results) / SIMULATIONS
-            dmg = sum(r["damage"] for r in results) / len(results) / SIMULATIONS
+            avg_kills = sum(r["kills"] for r in results) / SIMULATIONS
+            dmg = sum(r["damage"] for r in results) / SIMULATIONS
             summary.append({
                 "name": data.get("name", "Unnamed Template"),
                 "wipe": wipe_percent,
