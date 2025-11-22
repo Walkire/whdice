@@ -192,15 +192,56 @@ def on_drag_motion(event):
 
 def on_drag_drop(event):
     global DRAG_INDEX
+    if DRAG_INDEX is None:
+        return
     drag_end_index = event.widget.nearest(event.y)
-    if DRAG_INDEX is None or drag_end_index == DRAG_INDEX:
+
+    if not WEAPONS:
+        DRAG_INDEX = None
+        return
+
+    if DRAG_INDEX < 0 or DRAG_INDEX >= len(WEAPONS):
+        DRAG_INDEX = None
+        return
+
+    if drag_end_index < 0 or drag_end_index >= len(WEAPONS):
+        DRAG_INDEX = None
+        return
+
+    if drag_end_index == DRAG_INDEX:
+        DRAG_INDEX = None
         return
     WEAPONS.insert(drag_end_index, WEAPONS.pop(DRAG_INDEX))
     refresh_weapon_list()
     event.widget.selection_clear(0, tk.END)
     event.widget.selection_set(drag_end_index)
     DRAG_INDEX = None
-    
+
+def load_weapon_into_attacker(weapon):
+    for key, value in weapon.__dict__.items():
+        # Skip Tkinter-internal attributes, if any
+        if key.startswith("_") or key == "widgets":
+            continue
+
+        if hasattr(ATTACKER, key):
+            field = getattr(ATTACKER, key)
+
+            # If it's a Tk variable wrapper (TinkerBinder)
+            if hasattr(field, "var"):
+                field.var().set(value)
+            else:
+                setattr(ATTACKER, key, value)
+
+def on_weapon_double_click(event):
+    selection = WEAPON_LISTBOX.curselection()
+    if not selection:
+        return
+
+    index = selection[0]
+    weapon = WEAPONS.pop(index)
+    load_weapon_into_attacker(weapon)
+    refresh_weapon_list()
+
 # Create a Tkinter window
 window = tk.Tk()
 window.title("Warhammer Combat Simulator")
@@ -228,6 +269,7 @@ WEAPON_LISTBOX.grid(row=0, column=0, padx=5, pady=5, sticky='w')
 WEAPON_LISTBOX.bind("<Button-1>", on_drag_start)
 WEAPON_LISTBOX.bind("<B1-Motion>", on_drag_motion)
 WEAPON_LISTBOX.bind("<ButtonRelease-1>", on_drag_drop)
+WEAPON_LISTBOX.bind("<Double-Button-1>", on_weapon_double_click)
 
 button_frame = ttk.Frame(simulation_frame)
 button_frame.grid(row=1, column=0, padx=5, pady=2, sticky='w')
