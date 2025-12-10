@@ -63,7 +63,8 @@ def simulate(attacker, defender, weapons, simulations):
                     crit_hit=weapon.critical_hit,
                     plus_hit=weapon.plus_hit,
                     fish_rolls=weapon.reroll_hits == RerollType.FISH_ROLLS.value,
-                    stealth=defender.stealth
+                    stealth=defender.stealth,
+                    indirect=weapon.indirect
                 )
                 if weapon.sustained_hits != "0":
                     added_wounds = calc_sustained_hits(crits, weapon.sustained_hits)
@@ -90,13 +91,14 @@ def simulate(attacker, defender, weapons, simulations):
             results[i]["crit_wound"] += crits
 
             # Saves
+            cover_result = (defender.cover or weapon.indirect) and not weapon.ignore_cover
             previous_dice, crits = calc_saves(
                 wounds=previous_dice + added_saves,
                 save=defender.save,
                 invuln=defender.invuln,
                 ap=weapon.ap,
                 plus_save=defender.plus_save,
-                cover=defender.cover and not attacker.ignore_cover,
+                cover=cover_result,
                 reroll_save=defender.reroll_save
             )
             results[i]["saves"] += previous_dice
