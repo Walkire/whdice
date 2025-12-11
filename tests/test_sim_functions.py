@@ -79,60 +79,60 @@ class TestCalcSuccessFunction(unittest.TestCase):
     def test_success_threshold(self, mock_roll):
         mock_roll.side_effect = [5, 6, 2, 4, 6]  # Simulated dice rolls
         result = sim_functions.calc_success(5, success=4)
-        self.assertEqual(result, (4, 2))  # 4 successes, 2 crits
+        self.assertEqual(result, (4, 2, 4))  # 4 successes, 2 crits, 4+ score
 
     @patch('sim_functions.roll')
     def test_calc_success_invert_logic(self, mock_roll):
         mock_roll.side_effect = [1, 2, 3, 4, 5]
         result = sim_functions.calc_success(5, success=4, invert=True)
-        self.assertEqual(result, (3, 0))  # 3 rolls < 4
+        self.assertEqual(result, (3, 0, 4))  # 3 rolls < 4
 
     @patch('sim_functions.roll')
     def test_calc_success_reroll_all(self, mock_roll):
         mock_roll.side_effect = [2, 3, 6, 1, 5, 6, 4, 3]  # Initial + rerolls
         result = sim_functions.calc_success(5, success=5, reroll_all=True)
-        self.assertEqual(result, (3, 2))
+        self.assertEqual(result, (3, 2, 5))
 
     @patch('sim_functions.roll')
     def test_calc_success_reroll_ones(self, mock_roll):
         mock_roll.side_effect = [1, 2, 6, 1, 5, 6, 3]  # Initial + rerolls for ones
         result = sim_functions.calc_success(5, success=5, reroll_ones=True)
-        self.assertEqual(result, (3, 2))
+        self.assertEqual(result, (3, 2, 5))
         
     @patch('sim_functions.roll')
     def test_calc_success_fish_rerolls(self, mock_roll):
         mock_roll.side_effect = [6, 2, 6, 1, 5, 6, 3, 3]  # Initial + rerolls for non crit
         result = sim_functions.calc_success(5, success=5, fish_rolls=True)
-        self.assertEqual(result, (3, 3))
+        self.assertEqual(result, (3, 3, 5))
         
     @patch('sim_functions.roll')
     def test_calc_success_fish_rerolls_with_crit_change(self, mock_roll):
         mock_roll.side_effect = [4, 2, 4, 1, 5, 6, 3]  # Initial + rerolls for non crit
         result = sim_functions.calc_success(5, success=5, fish_rolls=True, crit_value=4)
-        self.assertEqual(result, (4, 4))
+        self.assertEqual(result, (4, 4, 5))
 
     @patch('sim_functions.roll')
     def test_calc_success_success_zero(self, mock_roll):
         result = sim_functions.calc_success(5, success=0)
-        self.assertEqual(result, (5, 0))  # All dice count as success with no crit
+        self.assertEqual(result, (5, 0, 0))  # All dice count as success with no crit
 
     @patch('sim_functions.roll')
     def test_calc_success_crit_value(self, mock_roll):
         mock_roll.side_effect = [1, 2, 6, 1, 5]
         result = sim_functions.calc_success(5, success=2, crit_value=5)
-        self.assertEqual(result, (3, 2)) 
+        self.assertEqual(result, (3, 2, 2)) 
         
     @patch('sim_functions.roll')
     def test_calc_success_reroll_all_saves(self, mock_roll):
         mock_roll.side_effect = [2, 3, 6, 1, 5, 6, 4, 3]  # Initial + rerolls
         result = sim_functions.calc_success(5, success=4, invert=True, reroll_all=True)
-        self.assertEqual(result, (1, 2))
+        self.assertEqual(result, (1, 2, 4))
         
     @patch('sim_functions.roll')
     def test_calc_success_reroll_one_save(self, mock_roll):
         mock_roll.side_effect = [4, 2, 6, 1, 3, 5]  # Initial + rerolls
         result = sim_functions.calc_success(5, success=3, invert=True, reroll_ones=True)
-        self.assertEqual(result, (1, 1))
+        self.assertEqual(result, (1, 1, 3))
 
 class TestCalcWoundFunction(unittest.TestCase):
     # 0 strength should give you a 6 to wound
@@ -283,39 +283,35 @@ class TestCalcHitFunction(unittest.TestCase):
     def test_calc_hit(self, mock_roll):
         mock_roll.side_effect = [5, 3, 2, 1, 6]  # Simulated dice rolls
         result = sim_functions.calc_hits(atk=5, score=3)
-        self.assertEqual(result, (3, 1)) # 3 hits, 1 crit
+        self.assertEqual(result, (3, 1, 3)) # 3 hits, 1 crit, 3+ score
     
     @patch('sim_functions.roll')
     @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
     def test_calc_hit_better_than_min(self, mock_calc_success, mock_roll):
         mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
         result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
-        self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
-        mock_calc_success.assert_called_with(5, 2, False, False, False, False, 6)
+        self.assertEqual(result, (4, 0, 2)) # 4 hits, 0 crit, 2+ score
         
     @patch('sim_functions.roll')
     @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
     def test_calc_hit_worse_than_max(self, mock_calc_success, mock_roll):
-        mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
-        result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
-        self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
-        mock_calc_success.assert_called_with(5, 2, False, False, False, False, 6)
+        mock_roll.side_effect = [4, 3, 2, 1, 6]  # Simulated dice rolls
+        result = sim_functions.calc_hits(atk=5, score=6, stealth=True)
+        self.assertEqual(result, (1, 1, 6)) # 4 hits, 0 crit, 6+ score
         
     @patch('sim_functions.roll')
     @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
     def test_calc_hit_indirect(self, mock_calc_success, mock_roll):
         mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
         result = sim_functions.calc_hits(atk=5, score=2, indirect=True)
-        self.assertEqual(result, (1, 0)) # 1 hit, 0 crit
-        mock_calc_success.assert_called_with(5, 4, False, False, False, False, 6)
+        self.assertEqual(result, (1, 0, 4)) # 1 hit, 0 crit, 4+ score
         
     @patch('sim_functions.roll')
     @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
     def test_calc_hit_indirect_minus_one(self, mock_calc_success, mock_roll):
         mock_roll.side_effect = [4, 3, 5, 1, 5]  # Simulated dice rolls
         result = sim_functions.calc_hits(atk=5, score=4, indirect=True)
-        self.assertEqual(result, (2, 0)) # 2 hits, 0 crit
-        mock_calc_success.assert_called_with(5, 5, False, False, False, False, 6)
+        self.assertEqual(result, (2, 0, 5)) # 2 hits, 0 crit, 5+ score
         
     
 

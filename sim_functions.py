@@ -10,6 +10,9 @@ def roll(num_sides = 6):
 # Check if the input is a string representing a dice roll or a numeric value
 # and roll the dice accordingly. If it's a numeric value, return it as is.
 def check_and_roll_numeric(dice) -> int:
+    # assume 0 if an empty string
+    if dice == '':
+        dice = '0'
     if not isinstance(dice, str):
         dice = str(dice)
 
@@ -42,7 +45,7 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
     crits = 0
     reroll_crits = 0
     if success == 0:
-        return dice, 0
+        return dice, 0, 0
     
     for _ in range(dice):
         result = roll()
@@ -61,22 +64,22 @@ def calc_success(dice, success, invert = False, reroll_all = False, reroll_ones 
             
     if invert:
         if reroll_all:
-            total, reroll_crits = calc_success(total, success, invert, crit_value = crit_value)
+            total, reroll_crits, _ = calc_success(total, success, invert, crit_value = crit_value)
         elif reroll_ones:
-            reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
+            reroll_total, reroll_crits, _ = calc_success(ones, success, invert, crit_value = crit_value)
             total = reroll_total + total - ones
-        return total, crits + reroll_crits
+        return total, crits + reroll_crits, success
         
     else:
         if reroll_all:
-            reroll_total, reroll_crits = calc_success(dice - total, success, invert, crit_value = crit_value)
+            reroll_total, reroll_crits, _ = calc_success(dice - total, success, invert, crit_value = crit_value)
         elif reroll_ones:
-            reroll_total, reroll_crits = calc_success(ones, success, invert, crit_value = crit_value)
+            reroll_total, reroll_crits, _ = calc_success(ones, success, invert, crit_value = crit_value)
         elif fish_rolls:
             total = crits
-            reroll_total, reroll_crits = calc_success(dice - crits, success, invert, crit_value = crit_value)
+            reroll_total, reroll_crits, _ = calc_success(dice - crits, success, invert, crit_value = crit_value)
         
-        return reroll_total + total, crits + reroll_crits
+        return reroll_total + total, crits + reroll_crits, success
 
 def calc_to_wound(strength, toughness, plus_wound = False, minus_wound = MinusWoundType.NO_MINUS.value) -> int:
     if strength == 0:
@@ -228,7 +231,7 @@ def calc_feel_no_pain(damage, fnp = 0) -> list:
     if isinstance(damage, list):
         return [calc_success(d, fnp, True)[0] for d in damage]
     else:
-        dmg, _ = calc_success(damage, fnp, True)
+        dmg, *_ = calc_success(damage, fnp, True)
         return dmg
 
 

@@ -86,7 +86,7 @@ def run_simulation():
         results, wipe_percent = simulate(ATTACKER, DEFENDER, WEAPONS, SIMULATIONS)
 
         # Setup data
-        columns = ("Name", "Attacks", "Hits", "Wounds", "After Saves", "Damage", "After FNP", "Kills")
+        columns = ("Name", "Attacks", "Hits", "Wounds", "Failed Saves", "Damage", "After FNP", "Kills")
         rows = [
             (
                 r["weapon"].name if r["weapon"].name else "-",

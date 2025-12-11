@@ -127,7 +127,10 @@ def format_weapon_details(results, defender, wipe_percent, simulations):
         weapon = r["weapon"]
         name = weapon.name if weapon.name else "-"
         lines.append(f"Weapon: {name}")
-        lines.append(f"-- With {r['to_wound']} to wound --")
+        lines.append(f"{r['to_hit'] / simulations:.0f}+ to hit")
+        lines.append(f"{r['to_wound']}+ to wound")
+        lines.append(f"{r['to_save'] / simulations:.0f}+ to save")
+        lines.append(f"----------------\n")
 
         if weapon.sustained_hits and weapon.sustained_hits != "0":
             lines.append(f"Sustained Hits: {r['sustained'] / simulations:.2f}")
@@ -145,7 +148,7 @@ def format_weapon_details(results, defender, wipe_percent, simulations):
             f"Attacks: {r['attacks'] / simulations:.2f}\n"
             f"Hits: {'N/A' if weapon.torrent else round(r['hits'] / simulations, 2)}\n"
             f"Wounds: {r['wounds'] / simulations:.2f}\n"
-            f"After Saves: {r['saves'] / simulations:.2f}\n"
+            f"Failed Saves: {r['saves'] / simulations:.2f}\n"
             f"Damage: {r['damage'] / simulations:.2f}\n"
             f"After FNP: {fnp_value}\n"
             f"Kills: {kills_value}"
