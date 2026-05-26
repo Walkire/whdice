@@ -1,11 +1,11 @@
 {
-  "name": "5 Terminators",
+  "name": "10 Terminators",
   "toughness": 5,
   "save": 2,
   "invuln": 4,
   "wounds": 3,
   "feel_no_pain": 0,
-  "model_count": 5,
+  "model_count": 10,
   "plus_save": false,
   "cover": false
 }
