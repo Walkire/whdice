@@ -278,7 +278,7 @@ class ComparePage(customtkinter.CTkFrame):
             self._tree.delete(item)
 
         for i, row in enumerate(comparison_data):
-            tag = self._wipe_tag(row["wipe_pct"])
+            tag = self._effectiveness_tag(row)
             self._tree.insert("", "end", iid=str(i), values=(
                 row["name"],
                 row["avg_kills"],
@@ -368,15 +368,37 @@ class ComparePage(customtkinter.CTkFrame):
 
         return "\n".join(lines)
 
-    def _wipe_tag(self, wipe_pct: float) -> str:
-        """Return a color tag based on wipe percentage."""
-        if wipe_pct >= 75:
+    def _effectiveness_tag(self, row: dict) -> str:
+        """Return a color tag based on effectiveness.
+
+        For multi-model units: uses wipe %.
+        For single-model units (vehicles/monsters): uses avg damage as % of total HP.
+        """
+        defender = row.get("defender", {})
+        model_count = defender.get("model_count", 1)
+        wounds = defender.get("wounds", 1)
+
+        if model_count == 1:
+            # Single model: color by damage dealt vs total HP
+            total_hp = wounds
+            if total_hp > 0:
+                damage_pct = (row["avg_damage"] / total_hp) * 100
+            else:
+                damage_pct = 0
+            return self._pct_to_tag(damage_pct)
+        else:
+            # Multi-model: color by wipe %
+            return self._pct_to_tag(row["wipe_pct"])
+
+    def _pct_to_tag(self, pct: float) -> str:
+        """Map a percentage to a color tag."""
+        if pct >= 75:
             return "high"
-        elif wipe_pct >= 50:
+        elif pct >= 50:
             return "medium_high"
-        elif wipe_pct >= 25:
+        elif pct >= 25:
             return "medium"
-        elif wipe_pct >= 10:
+        elif pct >= 10:
             return "medium_low"
         else:
             return "low"
