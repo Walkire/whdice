@@ -95,13 +95,23 @@ class AttackerPanel(customtkinter.CTkScrollableFrame):
         # Convert numeric fields
         for int_key in ("score", "strength", "ap", "critical_hit", "critical_wound"):
             try:
-                values[int_key] = int(values[int_key])
+                val = values[int_key]
+                if val == "" or val is None:
+                    values[int_key] = ATTACKER_DEFAULTS[int_key]
+                else:
+                    values[int_key] = int(val)
             except (ValueError, TypeError):
                 values[int_key] = ATTACKER_DEFAULTS[int_key]
 
         # Boolean fields from checkboxes
         for bool_key in ("plus_hit", "plus_wound"):
             values[bool_key] = bool(values.get(bool_key))
+
+        # String fields that should default to "0" when empty
+        for str_key in ("attacks", "damage", "sustained_hits", "melta_value"):
+            val = values.get(str_key, "")
+            if val == "" or val is None:
+                values[str_key] = ATTACKER_DEFAULTS[str_key]
 
         # Abilities
         abilities = self._ability_selector.get_active()

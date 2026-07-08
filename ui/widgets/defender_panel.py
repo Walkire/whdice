@@ -89,7 +89,11 @@ class DefenderPanel(customtkinter.CTkScrollableFrame):
         # Convert numeric fields
         for int_key in ("model_count", "toughness", "save", "invuln", "wounds", "feel_no_pain"):
             try:
-                values[int_key] = int(values[int_key])
+                val = values[int_key]
+                if val == "" or val is None:
+                    values[int_key] = DEFENDER_DEFAULTS[int_key]
+                else:
+                    values[int_key] = int(val)
             except (ValueError, TypeError):
                 values[int_key] = DEFENDER_DEFAULTS[int_key]
 

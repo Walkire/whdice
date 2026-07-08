@@ -65,9 +65,7 @@ class StatRow(customtkinter.CTkFrame):
         return self._var.get()
 
     def _on_entry_change(self) -> None:
-        """Fire on_change only when the entry has content (not mid-clear)."""
-        if self._var.get().strip() == "":
-            return  # User is clearing the field, don't trigger update yet
+        """Fire on_change when the entry value changes."""
         if self._on_change:
             self._on_change()
 

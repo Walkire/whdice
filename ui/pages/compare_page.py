@@ -196,9 +196,6 @@ class ComparePage(customtkinter.CTkFrame):
         if self._running:
             return
 
-        # Refresh checkboxes in case templates changed
-        self._rebuild_checkboxes()
-
         weapons = self._state.weapons
         if not weapons:
             self._status_label.configure(text="No weapons configured. Add weapons first.")
