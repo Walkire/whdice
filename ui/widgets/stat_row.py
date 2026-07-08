@@ -38,7 +38,9 @@ class StatRow(customtkinter.CTkFrame):
             self._var = customtkinter.StringVar(value=str(default) if default is not None else "")
             self._widget = customtkinter.CTkEntry(self, textvariable=self._var, width=120)
             if on_change:
-                self._var.trace_add("write", lambda *_: self._on_entry_change())
+                # Only fire on_change when user finishes editing (focus out or Enter)
+                self._widget.bind("<FocusOut>", lambda *_: self._on_entry_change())
+                self._widget.bind("<Return>", lambda *_: self._on_entry_change())
         elif widget_type == "checkbox":
             self._var = customtkinter.BooleanVar(value=bool(default) if default is not None else False)
             self._widget = customtkinter.CTkCheckBox(self, text="", variable=self._var, width=24)
