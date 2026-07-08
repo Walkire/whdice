@@ -74,12 +74,16 @@ class App(customtkinter.CTk):
 
     def _init_pages(self) -> None:
         """Create and register all application pages."""
+        # Shared template manager
+        self.template_manager = TemplateManager()
+
         # Core pages
         self.page_manager.register(
             "attacker", AttackerPage(self._page_container, state=self.app_state)
         )
         self.page_manager.register(
-            "defender", DefenderPage(self._page_container, state=self.app_state)
+            "defender", DefenderPage(self._page_container, state=self.app_state,
+                                    template_manager=self.template_manager)
         )
         self.page_manager.register(
             "weapons", WeaponPage(
@@ -97,7 +101,6 @@ class App(customtkinter.CTk):
         )
 
         # Template Library page
-        self.template_manager = TemplateManager()
         self.page_manager.register(
             "templates", TemplatePage(
                 self._page_container, state=self.app_state,

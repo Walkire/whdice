@@ -32,8 +32,8 @@ class ComparePage(customtkinter.CTkFrame):
         self._template_vars = {}  # filename -> BooleanVar
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=2)
-        self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(4, weight=2)
+        self.grid_rowconfigure(6, weight=1)
 
         # Top bar
         top_bar = customtkinter.CTkFrame(self, fg_color="transparent")
@@ -85,21 +85,21 @@ class ComparePage(customtkinter.CTkFrame):
         )
         self._checkbox_frame.pack(fill="x", pady=(4, 0))
 
-        # Warning label
+        # Warning label (row 2)
         self._warning_label = customtkinter.CTkLabel(
             self, text="", text_color=("orange3", "orange"),
             font=customtkinter.CTkFont(size=FONT_SMALL[1]),
         )
         self._warning_label.grid(row=2, column=0, sticky="w", padx=PAGE_PAD_X, pady=(0, 2))
 
-        # Progress bar
+        # Progress bar (row 3)
         self._progress = customtkinter.CTkProgressBar(self)
-        self._progress.grid(row=2, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(16, 8))
+        self._progress.grid(row=3, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(0, 8))
         self._progress.set(0)
 
-        # Results table
+        # Results table (row 4)
         self._tree_frame = customtkinter.CTkFrame(self)
-        self._tree_frame.grid(row=3, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, 4))
+        self._tree_frame.grid(row=4, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, 4))
         self._tree_frame.grid_columnconfigure(0, weight=1)
         self._tree_frame.grid_rowconfigure(0, weight=1)
 
@@ -125,16 +125,16 @@ class ComparePage(customtkinter.CTkFrame):
         self._tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky="ns")
 
-        # Status label
+        # Status label (row 5)
         self._status_label = customtkinter.CTkLabel(self, text="")
-        self._status_label.grid(row=4, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
+        self._status_label.grid(row=5, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
 
-        # Detail view
+        # Detail view (row 6)
         self._details = customtkinter.CTkTextbox(
             self, height=140, font=customtkinter.CTkFont(family="Consolas", size=12),
             state="disabled",
         )
-        self._details.grid(row=5, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
+        self._details.grid(row=6, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
 
         # Bind row selection
         self._tree.bind("<<TreeviewSelect>>", self._on_row_select)
