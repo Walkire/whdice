@@ -116,7 +116,8 @@ class ComparePage(customtkinter.CTkFrame):
 
         self._running = True
         self._run_btn.configure(state="disabled")
-        self._progress.set(0)
+        self._progress.configure(mode="indeterminate")
+        self._progress.start()
         self._status_label.configure(text="Running comparison...")
         self._comparison_data = []
 
@@ -161,16 +162,14 @@ class ComparePage(customtkinter.CTkFrame):
                     "defender": defender_dict,
                 })
 
-                # Update progress
-                progress = (idx + 1) / total
-                self.after(0, lambda p=progress: self._progress.set(p))
-
             self.after(0, lambda: self._display_results(comparison_data))
         except Exception as e:
             self.after(0, lambda: self._display_error(str(e)))
 
     def _display_results(self, comparison_data: list) -> None:
         """Populate table with comparison results."""
+        self._progress.stop()
+        self._progress.configure(mode="determinate")
         self._progress.set(1.0)
         self._running = False
         self._run_btn.configure(state="normal")
@@ -199,6 +198,8 @@ class ComparePage(customtkinter.CTkFrame):
 
     def _display_error(self, message: str) -> None:
         """Show error state."""
+        self._progress.stop()
+        self._progress.configure(mode="determinate")
         self._progress.set(0)
         self._running = False
         self._run_btn.configure(state="normal")

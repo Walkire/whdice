@@ -116,7 +116,8 @@ class ResultsPage(customtkinter.CTkFrame):
 
         self._running = True
         self._run_btn.configure(state="disabled")
-        self._progress.set(0)
+        self._progress.configure(mode="indeterminate")
+        self._progress.start()
         self._wipe_label.configure(text="Running simulation...")
 
         # Clear previous results
@@ -146,6 +147,8 @@ class ResultsPage(customtkinter.CTkFrame):
 
     def _display_results(self, results: list, wipe_percent: float) -> None:
         """Populate the treeview with simulation results."""
+        self._progress.stop()
+        self._progress.configure(mode="determinate")
         self._progress.set(1.0)
         self._running = False
         self._run_btn.configure(state="normal")
@@ -183,6 +186,8 @@ class ResultsPage(customtkinter.CTkFrame):
 
     def _display_error(self, message: str) -> None:
         """Show an error message when simulation fails."""
+        self._progress.stop()
+        self._progress.configure(mode="determinate")
         self._progress.set(0)
         self._running = False
         self._run_btn.configure(state="normal")
