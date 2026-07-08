@@ -17,7 +17,7 @@ DEFAULTS = {
     "reroll_save": RerollType.NO_REROLL.value,
     "plus_save": False,
     "cover": False,
-    "stealth": False
+    "minus_hit": False,
 }
 
 class Defender(BaseUnit):
@@ -35,7 +35,7 @@ class Defender(BaseUnit):
         self.reroll_save = TinkerBinder(tk.StringVar, value=DEFAULTS['reroll_save'])
         self.plus_save = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_save'])
         self.cover = TinkerBinder(tk.IntVar, value=DEFAULTS['cover'])
-        self.stealth = TinkerBinder(tk.IntVar, value=DEFAULTS['stealth'])
+        self.minus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['minus_hit'])
 
         if not main_frame is None and not mod_frame is None:
             self.main_frame = main_frame
@@ -61,8 +61,8 @@ class Defender(BaseUnit):
             {"label": "Wound reduction", "entry": self.minus_wound, "options": MinusWoundType, "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Reroll Save", "entry": self.reroll_save, "options": RerollType, "exclude": [RerollType.FISH_ROLLS], "type": TkType.OPTIONMENU, "style": {"sticky": 'w', "padx": 5}},
             {"label": "+1 Save", "entry": self.plus_save, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
-            {"label": "Cover", "entry": self.cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
-            {"label": "Stealth", "entry": self.stealth, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Cover or Stealth", "entry": self.cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "-1 Hit", "entry": self.minus_hit, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
         ], self.modifier_frame)
 
     def getValues(self):

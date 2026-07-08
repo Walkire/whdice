@@ -123,13 +123,15 @@ def calc_sustained_hits(crits, sustained_hits):
     
     return extra_hits
 
-def calc_hits(atk, score, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False, fish_rolls = False, stealth = False, indirect = False):
+def calc_hits(atk, score, reroll_hit = False, reroll_hit_one = False, crit_hit = 6, plus_hit = False, minus_hit = False, fish_rolls = False, cover = False, psychic = False):
+    # Cover gives -1 BS
+    if cover and not psychic:
+        score += 1
+    
     modifier = 0
     if plus_hit:
         modifier -= 1
-    if stealth:
-        modifier += 1
-    if indirect:
+    if minus_hit and not psychic:
         modifier += 1
         
     # modifier cannot be better than -1 or worse than 1
@@ -143,8 +145,6 @@ def calc_hits(atk, score, reroll_hit = False, reroll_hit_one = False, crit_hit =
     # to hit cannot be better than 2 or worse then a crit
     if score < 2:
         score = 2
-    if indirect and score < 4:
-        score = 4
     if score > crit_hit:
         score = crit_hit
         
@@ -153,14 +153,12 @@ def calc_hits(atk, score, reroll_hit = False, reroll_hit_one = False, crit_hit =
 def calc_wounds(hits, to_wound = 0, reroll_wound = False, reroll_wound_one = False, crit_wound = 6, fish_rolls = False) -> int:
     return calc_success(hits, to_wound, False, reroll_wound, reroll_wound_one, fish_rolls,crit_wound)
 
-def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False, cover = False, reroll_save = RerollType.NO_REROLL.value) -> int:
+def calc_saves(wounds, save = 0, invuln = 0, ap = 0, plus_save = False, reroll_save = RerollType.NO_REROLL.value) -> int:
     #modify the saves ignoring rules
     final_save = save
     if plus_save:
         final_save -= 1
-        
-    if cover:
-        final_save -= 1
+    
     final_save += ap
 
     # apply rules
