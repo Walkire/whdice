@@ -1,81 +1,86 @@
-⚔️ Warhammer Combat Simulator
-A GUI-based simulation tool for Warhammer 40K combat scenarios. This Python application allows users to configure attacker and defender units, simulate combat interactions, and view detailed statistical outcomes.
+# ⚔️ Warhammer Combat Simulator
 
-🧰 Features
-- **Tkinter GUI** with organized input frames for attackers and defenders
-- **Comprehensive weapon configuration** including special rules (Torrent, Blast, Lethal Hits, etc.)
-- **Advanced modifiers** for rerolls, damage reduction, and wound modifications
-- **Weapon list management** with drag-and-drop reordering and save/delete functionality
-- **Statistical simulation** running 100,000 iterations for accurate results
-- **Detailed results display** with summary table and expandable weapon details
-- **Unit wipe probability** calculations
+A desktop GUI tool for simulating Warhammer 40K combat scenarios. Configure attacker weapons and defender units, run Monte Carlo simulations (100,000 iterations), and view statistical outcomes: average hits, wounds, damage, kills, and unit wipe probability.
 
-📦 Requirements
+## Features
+
+- **Modern CustomTkinter UI** with dark mode, sidebar navigation, and multiple pages
+- **Comprehensive weapon configuration** including special rules (Torrent, Blast, Lethal Hits, Devastating Wounds, Sustained Hits, Melta)
+- **Defender templates** — save and load common unit profiles for quick comparison
+- **Weapon list management** with add, delete, duplicate, and reorder
+- **Statistical graphs** — damage distribution and kill probability charts (requires matplotlib)
+- **Summary statistics** — average, median, min, max for wounds/kills/damage
+- **Auto-save** — state persists between sessions
+- **Undo** — Ctrl+Z reverts the last action
+- **Theme toggle** — switch between dark, light, and system modes
+
+## Requirements
+
 - Python 3.8+
-- Standard library only (tkinter, random, re, unittest)
+- `customtkinter >= 5.2.0`
+- `matplotlib >= 3.7.0` (optional, for graphs)
 
-🚀 Getting Started
-1. Clone the repository
-2. Navigate to the root directory
-3. Run the application:
-   ```
-   python run.py
-   ```
+## Getting Started
 
-🖥️ Usage
-1. **Configure Attacker**: Set weapon stats (attacks, hit score, strength, AP, damage) and modifiers
-2. **Configure Defender**: Set unit stats (toughness, save, wounds, model count) and defensive modifiers
-3. **Save Weapons**: Add multiple weapon configurations to simulate combined attacks
-4. **Run Simulation**: Execute 100,000 iterations to get statistical results
-5. **Analyze Results**: View summary table and click weapons for detailed breakdowns
+```bash
+# Install dependencies
+pip install customtkinter matplotlib
 
-🎯 Weapon Features
-- **Basic Stats**: Attacks (dice notation supported), WS/BS, Strength, AP, Damage
-- **Special Rules**: Torrent, Blast, Lethal Hits, Devastating Wounds, Sustained Hits
-- **Rerolls**: Hit rerolls, wound rerolls, damage rerolls (all/ones)
-- **Modifiers**: +1 to hit/wound, critical hit/wound thresholds
-
-🛡️ Defender Features
-- **Core Stats**: Toughness, Save, Invulnerable Save, Wounds, Model Count
-- **Defensive Abilities**: Feel No Pain, +1 Save modifier
-- **Damage Reduction**: Minus one damage, halve damage, nullify one attack
-- **Wound Reduction**: Conditional -1 to wound based on strength comparison
-
-🧪 Simulation Logic
-The simulator processes combat in Warhammer 40K order:
-1. **Attacks**: Roll for number of attacks (with Blast bonus)
-2. **Hit Rolls**: Calculate hits with rerolls and critical hits
-3. **Special Hit Effects**: Apply Sustained Hits and Lethal Hits
-4. **Wound Rolls**: Calculate wounds with strength vs toughness
-5. **Special Wound Effects**: Apply Devastating Wounds
-6. **Save Rolls**: Apply armor saves, AP, and invulnerable saves
-7. **Damage**: Roll damage with rerolls and apply reduction
-8. **Feel No Pain**: Apply FNP saves to final damage
-9. **Kill Calculation**: Track model kills and unit wipe probability
-
-🧪 Testing
-Run the test suite:
+# Run the modern UI
+python app.py
 ```
+
+The legacy Tkinter interface is still available via `python run.py`.
+
+## Usage
+
+1. **Attacker** — configure weapon stats and abilities, then "Save as Weapon"
+2. **Defender** — set toughness, save, wounds, model count, and modifiers
+3. **Weapons** — view and manage your saved weapon list
+4. **Results** — run the simulation and see per-weapon breakdowns
+5. **Graphs** — visualize damage/kill distributions
+6. **Templates** — save/load defender profiles for batch comparison
+7. **Settings** — toggle theme and adjust simulation count
+
+## Testing
+
+```bash
+# Run unit tests
 python -m unittest tests/test_sim_functions.py
 ```
 
-📁 Project Structure
+## Project Structure
+
 ```
-whdice/
-├── classes/           # Core data classes
-│   ├── attacker.py   # Attacker unit configuration
-│   ├── defender.py   # Defender unit configuration
-│   ├── binder.py     # Tkinter variable binding
-│   └── data.py       # Data container class
-├── tests/            # Unit tests
-├── enums.py          # Enumeration definitions
-├── sim_functions.py  # Core simulation logic
-├── utils.py          # Utility functions
-└── run.py           # Main application entry point
+├── app.py                  # New CustomTkinter entry point
+├── run.py                  # Legacy Tkinter entry point
+├── simulation.py           # Core simulation loop
+├── sim_functions.py        # Pure simulation math (unchanged)
+├── enums.py                # Enums for reroll types, modifiers
+├── utils.py                # Dice notation parsing, helpers
+├── ui/
+│   ├── sidebar.py          # Sidebar navigation
+│   ├── page_manager.py     # Page show/hide logic
+│   ├── stats.py            # Summary statistics computation
+│   ├── styles.py           # Shared font, spacing, color constants
+│   ├── pages/              # One file per page
+│   └── widgets/            # Reusable widget components
+├── state/
+│   ├── app_state.py        # Central state manager (no Tkinter deps)
+│   ├── undo.py             # Undo stack
+│   ├── autosave.py         # JSON persistence
+│   └── template_manager.py # Template CRUD
+├── classes/                # Legacy data classes (attacker, defender, binder)
+├── templates/              # JSON defender profiles
+└── tests/                  # Unit tests
 ```
 
-📄 License
-This project is licensed under the MIT License.
+## Build Executable
 
-🙋‍♂️ Contributing
-Feel free to fork the repo and submit pull requests. For major changes, open an issue first to discuss your ideas.
+```bash
+pyinstaller run.spec
+```
+
+## License
+
+MIT
