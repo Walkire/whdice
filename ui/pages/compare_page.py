@@ -215,15 +215,24 @@ class ComparePage(customtkinter.CTkFrame):
 
         self._running = True
         self._run_btn.configure(state="disabled")
-        self._progress.configure(mode="indeterminate")
-        self._progress.start()
+        self._progress.configure(mode="determinate")
+        self._progress.set(0)
         self._status_label.configure(
             text=f"Running comparison against {len(templates)} templates..."
         )
         self._comparison_data = []
+        self._thread_progress = 0.0
 
         for item in self._tree.get_children():
             self._tree.delete(item)
+
+        thread = threading.Thread(
+            target=self._compare_thread, args=(weapons, templates), daemon=True
+        )
+        thread.start()
+
+        # Start polling for progress updates
+        self._poll_progress()
 
         thread = threading.Thread(
             target=self._compare_thread, args=(weapons, templates), daemon=True
@@ -237,6 +246,7 @@ class ComparePage(customtkinter.CTkFrame):
             weapon_data_list = [Data(**w) for w in weapons]
 
             comparison_data = []
+            total = len(templates)
 
             for idx, tpl in enumerate(templates):
                 defender_dict = {**DEFENDER_DEFAULTS}
@@ -261,16 +271,24 @@ class ComparePage(customtkinter.CTkFrame):
                     "defender": defender_dict,
                 })
 
+                # Update shared progress variable (polled by main thread)
+                self._thread_progress = (idx + 1) / total
+
             self.after(0, lambda: self._display_results(comparison_data))
         except Exception as e:
             self.after(0, lambda: self._display_error(str(e)))
 
+    def _poll_progress(self) -> None:
+        """Poll the thread's progress and update the bar every 200ms."""
+        if not self._running:
+            return
+        self._progress.set(self._thread_progress)
+        self.after(200, self._poll_progress)
+
     def _display_results(self, comparison_data: list) -> None:
         """Populate table with comparison results."""
-        self._progress.stop()
-        self._progress.configure(mode="determinate")
-        self._progress.set(1.0)
         self._running = False
+        self._progress.set(1.0)
         self._run_btn.configure(state="normal")
         self._comparison_data = comparison_data
 
@@ -297,10 +315,8 @@ class ComparePage(customtkinter.CTkFrame):
 
     def _display_error(self, message: str) -> None:
         """Show error state."""
-        self._progress.stop()
-        self._progress.configure(mode="determinate")
-        self._progress.set(0)
         self._running = False
+        self._progress.set(0)
         self._run_btn.configure(state="normal")
         self._status_label.configure(text=f"Error: {message}")
 
