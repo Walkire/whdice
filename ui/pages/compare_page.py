@@ -20,6 +20,7 @@ class ComparePage(customtkinter.CTkFrame):
 
     Runs the simulation against each template and displays a summary table
     showing avg kills, damage, and wipe % for each template.
+    Clicking a row shows the per-weapon detail breakdown for that template.
     """
 
     def __init__(self, master, state: AppState, template_manager: TemplateManager, **kwargs):
@@ -27,9 +28,11 @@ class ComparePage(customtkinter.CTkFrame):
         self._state = state
         self._tm = template_manager
         self._running = False
+        self._comparison_data = []  # Full results per template
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(2, weight=2)
+        self.grid_rowconfigure(4, weight=1)
 
         # Top bar
         top_bar = customtkinter.CTkFrame(self, fg_color="transparent")
@@ -62,7 +65,7 @@ class ComparePage(customtkinter.CTkFrame):
 
         columns = ("template", "avg_kills", "avg_damage", "wipe_pct")
         self._tree = tk.ttk.Treeview(
-            self._tree_frame, columns=columns, show="headings", height=15
+            self._tree_frame, columns=columns, show="headings", height=12
         )
 
         col_headings = {
@@ -84,7 +87,17 @@ class ComparePage(customtkinter.CTkFrame):
 
         # Status label
         self._status_label = customtkinter.CTkLabel(self, text="")
-        self._status_label.grid(row=3, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, PAGE_PAD_X))
+        self._status_label.grid(row=3, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
+
+        # Detail view — per-weapon breakdown for selected template
+        self._details = customtkinter.CTkTextbox(
+            self, height=160, font=customtkinter.CTkFont(family="Consolas", size=12),
+            state="disabled",
+        )
+        self._details.grid(row=4, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
+
+        # Bind row selection
+        self._tree.bind("<<TreeviewSelect>>", self._on_row_select)
 
     def _run_comparison(self) -> None:
         """Run simulation against all templates."""
@@ -105,6 +118,7 @@ class ComparePage(customtkinter.CTkFrame):
         self._run_btn.configure(state="disabled")
         self._progress.set(0)
         self._status_label.configure(text="Running comparison...")
+        self._comparison_data = []
 
         for item in self._tree.get_children():
             self._tree.delete(item)
@@ -120,7 +134,7 @@ class ComparePage(customtkinter.CTkFrame):
             attacker_data = Data(**self._state.attacker)
             weapon_data_list = [Data(**w) for w in weapons]
 
-            results_summary = []
+            comparison_data = []
             total = len(templates)
 
             for idx, tpl in enumerate(templates):
@@ -138,31 +152,34 @@ class ComparePage(customtkinter.CTkFrame):
                 avg_kills = sum(r["kills"] for r in results) / SIMULATIONS
                 avg_damage = sum(r["damage"] for r in results) / SIMULATIONS
 
-                results_summary.append({
+                comparison_data.append({
                     "name": tpl.get("name", "Unnamed"),
                     "avg_kills": round(avg_kills, 2),
                     "avg_damage": round(avg_damage, 2),
                     "wipe_pct": wipe_percent,
+                    "results": results,
+                    "defender": defender_dict,
                 })
 
                 # Update progress
                 progress = (idx + 1) / total
                 self.after(0, lambda p=progress: self._progress.set(p))
 
-            self.after(0, lambda: self._display_results(results_summary))
+            self.after(0, lambda: self._display_results(comparison_data))
         except Exception as e:
             self.after(0, lambda: self._display_error(str(e)))
 
-    def _display_results(self, summary: list) -> None:
+    def _display_results(self, comparison_data: list) -> None:
         """Populate table with comparison results."""
         self._progress.set(1.0)
         self._running = False
         self._run_btn.configure(state="normal")
+        self._comparison_data = comparison_data
 
         for item in self._tree.get_children():
             self._tree.delete(item)
 
-        for i, row in enumerate(summary):
+        for i, row in enumerate(comparison_data):
             self._tree.insert("", "end", iid=str(i), values=(
                 row["name"],
                 row["avg_kills"],
@@ -171,8 +188,14 @@ class ComparePage(customtkinter.CTkFrame):
             ))
 
         self._status_label.configure(
-            text=f"Compared against {len(summary)} templates."
+            text=f"Compared against {len(comparison_data)} templates. Click a row for details."
         )
+
+        # Clear detail view
+        self._details.configure(state="normal")
+        self._details.delete("1.0", "end")
+        self._details.insert("1.0", "Click a template row to see per-weapon breakdown.")
+        self._details.configure(state="disabled")
 
     def _display_error(self, message: str) -> None:
         """Show error state."""
@@ -181,11 +204,75 @@ class ComparePage(customtkinter.CTkFrame):
         self._run_btn.configure(state="normal")
         self._status_label.configure(text=f"Error: {message}")
 
+    def _on_row_select(self, event=None) -> None:
+        """Show per-weapon detail for the selected template."""
+        selected = self._tree.selection()
+        if not selected or not self._comparison_data:
+            return
+        idx = int(selected[0])
+        if idx < 0 or idx >= len(self._comparison_data):
+            return
+
+        text = self._format_detail(idx)
+        self._details.configure(state="normal")
+        self._details.delete("1.0", "end")
+        self._details.insert("1.0", text)
+        self._details.configure(state="disabled")
+
+    def _format_detail(self, idx: int) -> str:
+        """Format the per-weapon breakdown for a template comparison result."""
+        entry = self._comparison_data[idx]
+        results = entry["results"]
+        defender = entry["defender"]
+        wipe = entry["wipe_pct"]
+        sims = SIMULATIONS
+
+        lines = []
+        lines.append(f"Template: {entry['name']}")
+        lines.append(f"Unit Wiped: {wipe}%")
+        lines.append("")
+
+        for r in results:
+            weapon = r.get("weapon")
+            name = getattr(weapon, "name", None) or f"Weapon {r['id'] + 1}"
+            lines.append(f"--- {name} (To Wound: {r['to_wound']}+) ---")
+
+            # Special rules
+            sustained = getattr(weapon, "sustained_hits", "0")
+            if sustained and sustained != "0":
+                lines.append(f"  Sustained Hits: {r['sustained'] / sims:.2f}")
+            if getattr(weapon, "lethal_hits", False):
+                lines.append(f"  Lethal Hits:    {r['crit_hit'] / sims:.2f}")
+            if getattr(weapon, "devestating_wounds", False):
+                lines.append(f"  Dev. Wounds:    {r['crit_wound'] / sims:.2f}")
+
+            lines.append(f"  Attacks:        {r['attacks'] / sims:.2f}")
+
+            if getattr(weapon, "torrent", False):
+                lines.append("  Hits:           N/A (Torrent)")
+            else:
+                lines.append(f"  Hits:           {r['hits'] / sims:.2f}")
+
+            lines.append(f"  Wounds:         {r['wounds'] / sims:.2f}")
+            lines.append(f"  After Saves:    {r['saves'] / sims:.2f}")
+            lines.append(f"  Damage:         {r['damage'] / sims:.2f}")
+
+            fnp = defender.get("feel_no_pain", 0)
+            if fnp:
+                lines.append(f"  After FNP:      {r['fnp'] / sims:.2f}")
+
+            model_count = defender.get("model_count", 1)
+            if model_count > 1:
+                lines.append(f"  Kills:          {r['kills'] / sims:.2f}")
+
+            lines.append("")
+
+        return "\n".join(lines)
+
     def _sort_column(self, col: str) -> None:
         """Sort treeview by column (toggle ascending/descending)."""
         data = [(self._tree.set(child, col), child) for child in self._tree.get_children("")]
         try:
-            # Try numeric sort (strip % sign for wipe_pct)
             data.sort(key=lambda t: float(t[0].rstrip("%")), reverse=True)
         except ValueError:
             data.sort(key=lambda t: t[0])
