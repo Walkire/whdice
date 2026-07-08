@@ -24,9 +24,12 @@ class ResultsPage(customtkinter.CTkFrame):
         super().__init__(master, corner_radius=0, fg_color="transparent", **kwargs)
         self._state = state
         self._running = False
+        self._last_results = None
+        self._last_wipe = 0.0
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(2, weight=2)
+        self.grid_rowconfigure(4, weight=1)
 
         # Top bar with Run button
         top_bar = customtkinter.CTkFrame(self, fg_color="transparent")
@@ -89,7 +92,17 @@ class ResultsPage(customtkinter.CTkFrame):
         self._wipe_label = customtkinter.CTkLabel(
             self, text="", font=customtkinter.CTkFont(size=FONT_BODY[1])
         )
-        self._wipe_label.grid(row=3, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, PAGE_PAD_X))
+        self._wipe_label.grid(row=3, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
+
+        # Detail view — shows full breakdown when a weapon row is selected
+        self._details = customtkinter.CTkTextbox(
+            self, height=140, font=customtkinter.CTkFont(family="Consolas", size=12),
+            state="disabled",
+        )
+        self._details.grid(row=4, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
+
+        # Bind row selection
+        self._tree.bind("<<TreeviewSelect>>", self._on_row_select)
 
     def _run_simulation(self) -> None:
         """Run the simulation in a background thread."""
@@ -137,17 +150,19 @@ class ResultsPage(customtkinter.CTkFrame):
         self._running = False
         self._run_btn.configure(state="normal")
 
-        # Store results in state for other pages (e.g. graphs)
+        # Store results for detail view and other pages
+        self._last_results = results
+        self._last_wipe = wipe_percent
         self._state.results = results
 
         for item in self._tree.get_children():
             self._tree.delete(item)
 
         sims = SIMULATIONS
-        for r in results:
+        for i, r in enumerate(results):
             weapon = r.get("weapon")
             name = getattr(weapon, "name", None) or f"Weapon {r['id'] + 1}"
-            self._tree.insert("", "end", values=(
+            self._tree.insert("", "end", iid=str(i), values=(
                 name,
                 f"{r['attacks'] / sims:.1f}",
                 f"{r['hits'] / sims:.1f}",
@@ -160,9 +175,76 @@ class ResultsPage(customtkinter.CTkFrame):
 
         self._wipe_label.configure(text=f"Unit wiped: {wipe_percent}%")
 
+        # Clear detail view
+        self._details.configure(state="normal")
+        self._details.delete("1.0", "end")
+        self._details.insert("1.0", "Click a weapon row to see detailed breakdown.")
+        self._details.configure(state="disabled")
+
     def _display_error(self, message: str) -> None:
         """Show an error message when simulation fails."""
         self._progress.set(0)
         self._running = False
         self._run_btn.configure(state="normal")
         self._wipe_label.configure(text=f"Error: {message}")
+
+    def _on_row_select(self, event=None) -> None:
+        """Show detailed breakdown for the selected weapon."""
+        selected = self._tree.selection()
+        if not selected or not self._last_results:
+            return
+        idx = int(selected[0])
+        if idx < 0 or idx >= len(self._last_results):
+            return
+
+        text = self._format_detail(idx)
+        self._details.configure(state="normal")
+        self._details.delete("1.0", "end")
+        self._details.insert("1.0", text)
+        self._details.configure(state="disabled")
+
+    def _format_detail(self, idx: int) -> str:
+        """Format the full detail breakdown for a single weapon result."""
+        r = self._last_results[idx]
+        weapon = r.get("weapon")
+        sims = SIMULATIONS
+        defender = self._state.defender
+
+        name = getattr(weapon, "name", None) or f"Weapon {r['id'] + 1}"
+        lines = []
+        lines.append(f"Weapon: {name}")
+        lines.append(f"To Wound: {r['to_wound']}+")
+        lines.append(f"Unit Wiped: {self._last_wipe}%")
+        lines.append("")
+
+        # Special rules
+        sustained = getattr(weapon, "sustained_hits", "0")
+        if sustained and sustained != "0":
+            lines.append(f"Sustained Hits: {r['sustained'] / sims:.2f}")
+        if getattr(weapon, "lethal_hits", False):
+            lines.append(f"Lethal Hits: {r['crit_hit'] / sims:.2f}")
+        if getattr(weapon, "devestating_wounds", False):
+            lines.append(f"Devastating Wounds: {r['crit_wound'] / sims:.2f}")
+        if getattr(weapon, "blast", False):
+            model_count = defender.get("model_count", 10) if isinstance(defender, dict) else getattr(defender, "model_count", 10)
+            lines.append(f"Blast: +{int(model_count / 5)} extra attacks")
+
+        lines.append("")
+        lines.append(f"Attacks:      {r['attacks'] / sims:.2f}")
+
+        is_torrent = getattr(weapon, "torrent", False)
+        if is_torrent:
+            lines.append("Hits:         N/A (Torrent)")
+        else:
+            lines.append(f"Hits:         {r['hits'] / sims:.2f}")
+        lines.append(f"Wounds:       {r['wounds'] / sims:.2f}")
+        lines.append(f"After Saves:  {r['saves'] / sims:.2f}")
+        lines.append(f"Damage:       {r['damage'] / sims:.2f}")
+
+        fnp = defender.get("feel_no_pain", 0) if isinstance(defender, dict) else getattr(defender, "feel_no_pain", 0)
+        lines.append(f"After FNP:    {r['fnp'] / sims:.2f}" if fnp else "After FNP:    -")
+
+        model_count = defender.get("model_count", 1) if isinstance(defender, dict) else getattr(defender, "model_count", 1)
+        lines.append(f"Kills:        {r['kills'] / sims:.2f}" if model_count > 1 else "Kills:        -")
+
+        return "\n".join(lines)

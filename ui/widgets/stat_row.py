@@ -38,7 +38,7 @@ class StatRow(customtkinter.CTkFrame):
             self._var = customtkinter.StringVar(value=str(default) if default is not None else "")
             self._widget = customtkinter.CTkEntry(self, textvariable=self._var, width=120)
             if on_change:
-                self._var.trace_add("write", lambda *_: on_change())
+                self._var.trace_add("write", lambda *_: self._on_entry_change())
         elif widget_type == "checkbox":
             self._var = customtkinter.BooleanVar(value=bool(default) if default is not None else False)
             self._widget = customtkinter.CTkCheckBox(self, text="", variable=self._var, width=24)
@@ -63,6 +63,13 @@ class StatRow(customtkinter.CTkFrame):
         if self._widget_type == "checkbox":
             return self._var.get()
         return self._var.get()
+
+    def _on_entry_change(self) -> None:
+        """Fire on_change only when the entry has content (not mid-clear)."""
+        if self._var.get().strip() == "":
+            return  # User is clearing the field, don't trigger update yet
+        if self._on_change:
+            self._on_change()
 
     def set_value(self, value: Any) -> None:
         """Set the current value."""

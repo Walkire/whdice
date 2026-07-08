@@ -13,6 +13,7 @@ from ui.pages.weapon_page import WeaponPage
 from ui.pages.results_page import ResultsPage
 from ui.pages.graph_page import GraphPage
 from ui.pages.template_page import TemplatePage
+from ui.pages.compare_page import ComparePage
 from ui.pages.settings_page import SettingsPage
 
 
@@ -102,6 +103,14 @@ class App(customtkinter.CTk):
                 self._page_container, state=self.app_state,
                 template_manager=self.template_manager,
                 on_load_template=lambda: self._show_page("defender"),
+            )
+        )
+
+        # Compare Templates page
+        self.page_manager.register(
+            "compare", ComparePage(
+                self._page_container, state=self.app_state,
+                template_manager=self.template_manager,
             )
         )
 

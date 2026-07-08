@@ -17,6 +17,7 @@ NAV_ITEMS = [
     ("Results", "results"),
     ("Graphs", "graphs"),
     ("Templates", "templates"),
+    ("Compare", "compare"),
     ("Settings", "settings"),
 ]
 
