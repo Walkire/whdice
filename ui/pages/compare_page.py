@@ -1,4 +1,4 @@
-"""Compare Templates Page — run weapons against all templates and show comparison."""
+"""Compare Templates Page — run weapons against selected templates and show comparison."""
 
 import threading
 import tkinter as tk
@@ -9,18 +9,18 @@ from classes.data import Data
 from simulation import simulate
 from state.app_state import AppState, DEFENDER_DEFAULTS
 from state.template_manager import TemplateManager
-from ui.styles import FONT_TITLE, BUTTON_HEIGHT, PAGE_PAD_X
+from ui.styles import FONT_TITLE, FONT_SMALL, BUTTON_HEIGHT, PAGE_PAD_X, COLOR_MUTED_TEXT
 
 
 SIMULATIONS = 100000
+WARN_THRESHOLD = 5  # Show warning when more than this many templates selected
 
 
 class ComparePage(customtkinter.CTkFrame):
-    """Page for comparing current weapons against all saved defender templates.
+    """Page for comparing current weapons against selected defender templates.
 
-    Runs the simulation against each template and displays a summary table
-    showing avg kills, damage, and wipe % for each template.
-    Clicking a row shows the per-weapon detail breakdown for that template.
+    Users can toggle which templates to include. Runs the simulation against
+    each selected template and shows a summary table with detail on click.
     """
 
     def __init__(self, master, state: AppState, template_manager: TemplateManager, **kwargs):
@@ -28,11 +28,12 @@ class ComparePage(customtkinter.CTkFrame):
         self._state = state
         self._tm = template_manager
         self._running = False
-        self._comparison_data = []  # Full results per template
+        self._comparison_data = []
+        self._template_vars = {}  # filename -> BooleanVar
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(2, weight=2)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(3, weight=2)
+        self.grid_rowconfigure(5, weight=1)
 
         # Top bar
         top_bar = customtkinter.CTkFrame(self, fg_color="transparent")
@@ -52,20 +53,59 @@ class ComparePage(customtkinter.CTkFrame):
         )
         self._run_btn.pack(side="right")
 
+        # Template selector panel
+        selector_frame = customtkinter.CTkFrame(self, fg_color="transparent")
+        selector_frame.grid(row=1, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(0, 4))
+
+        selector_header = customtkinter.CTkFrame(selector_frame, fg_color="transparent")
+        selector_header.pack(fill="x")
+
+        selector_label = customtkinter.CTkLabel(
+            selector_header, text="Templates to compare:",
+            font=customtkinter.CTkFont(size=12),
+        )
+        selector_label.pack(side="left")
+
+        self._select_all_btn = customtkinter.CTkButton(
+            selector_header, text="All", width=40, height=22, corner_radius=4,
+            fg_color="transparent", border_width=1, text_color=("gray10", "gray90"),
+            command=self._select_all,
+        )
+        self._select_all_btn.pack(side="right", padx=(4, 0))
+
+        self._select_none_btn = customtkinter.CTkButton(
+            selector_header, text="None", width=44, height=22, corner_radius=4,
+            fg_color="transparent", border_width=1, text_color=("gray10", "gray90"),
+            command=self._select_none,
+        )
+        self._select_none_btn.pack(side="right", padx=(4, 0))
+
+        self._checkbox_frame = customtkinter.CTkScrollableFrame(
+            selector_frame, height=80,
+        )
+        self._checkbox_frame.pack(fill="x", pady=(4, 0))
+
+        # Warning label
+        self._warning_label = customtkinter.CTkLabel(
+            self, text="", text_color=("orange3", "orange"),
+            font=customtkinter.CTkFont(size=FONT_SMALL[1]),
+        )
+        self._warning_label.grid(row=2, column=0, sticky="w", padx=PAGE_PAD_X, pady=(0, 2))
+
         # Progress bar
         self._progress = customtkinter.CTkProgressBar(self)
-        self._progress.grid(row=1, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(4, 8))
+        self._progress.grid(row=2, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(16, 8))
         self._progress.set(0)
 
         # Results table
         self._tree_frame = customtkinter.CTkFrame(self)
-        self._tree_frame.grid(row=2, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, 4))
+        self._tree_frame.grid(row=3, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, 4))
         self._tree_frame.grid_columnconfigure(0, weight=1)
         self._tree_frame.grid_rowconfigure(0, weight=1)
 
         columns = ("template", "avg_kills", "avg_damage", "wipe_pct")
         self._tree = tk.ttk.Treeview(
-            self._tree_frame, columns=columns, show="headings", height=12
+            self._tree_frame, columns=columns, show="headings", height=10
         )
 
         col_headings = {
@@ -87,38 +127,95 @@ class ComparePage(customtkinter.CTkFrame):
 
         # Status label
         self._status_label = customtkinter.CTkLabel(self, text="")
-        self._status_label.grid(row=3, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
+        self._status_label.grid(row=4, column=0, sticky="w", padx=PAGE_PAD_X, pady=(4, 4))
 
-        # Detail view — per-weapon breakdown for selected template
+        # Detail view
         self._details = customtkinter.CTkTextbox(
-            self, height=160, font=customtkinter.CTkFont(family="Consolas", size=12),
+            self, height=140, font=customtkinter.CTkFont(family="Consolas", size=12),
             state="disabled",
         )
-        self._details.grid(row=4, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
+        self._details.grid(row=5, column=0, sticky="nsew", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_X))
 
         # Bind row selection
         self._tree.bind("<<TreeviewSelect>>", self._on_row_select)
 
+        # Build initial template checkboxes
+        self._rebuild_checkboxes()
+
+    def _rebuild_checkboxes(self) -> None:
+        """Rebuild the template toggle checkboxes from disk."""
+        # Clear existing
+        for widget in self._checkbox_frame.winfo_children():
+            widget.destroy()
+        self._template_vars.clear()
+
+        templates = self._tm.list_templates()
+        for tpl in templates:
+            filename = tpl.get("_filename", "")
+            name = tpl.get("name", filename)
+            var = customtkinter.BooleanVar(value=True)
+            var.trace_add("write", lambda *_: self._update_warning())
+            cb = customtkinter.CTkCheckBox(
+                self._checkbox_frame, text=name, variable=var,
+                height=22, checkbox_width=18, checkbox_height=18,
+            )
+            cb.pack(side="left", padx=(0, 12), pady=2)
+            self._template_vars[filename] = var
+
+        self._update_warning()
+
+    def _select_all(self) -> None:
+        for var in self._template_vars.values():
+            var.set(True)
+
+    def _select_none(self) -> None:
+        for var in self._template_vars.values():
+            var.set(False)
+
+    def _update_warning(self) -> None:
+        """Show/hide warning based on number of selected templates."""
+        count = sum(1 for v in self._template_vars.values() if v.get())
+        if count > WARN_THRESHOLD:
+            self._warning_label.configure(
+                text=f"⚠ {count} templates selected — comparison may take a while "
+                     f"(~{count * 3}s)"
+            )
+        else:
+            self._warning_label.configure(text="")
+
+    def _get_selected_templates(self) -> list:
+        """Return only templates that are checked."""
+        all_templates = self._tm.list_templates()
+        return [
+            tpl for tpl in all_templates
+            if self._template_vars.get(tpl.get("_filename", ""), customtkinter.BooleanVar(value=False)).get()
+        ]
+
     def _run_comparison(self) -> None:
-        """Run simulation against all templates."""
+        """Run simulation against selected templates."""
         if self._running:
             return
+
+        # Refresh checkboxes in case templates changed
+        self._rebuild_checkboxes()
 
         weapons = self._state.weapons
         if not weapons:
             self._status_label.configure(text="No weapons configured. Add weapons first.")
             return
 
-        templates = self._tm.list_templates()
+        templates = self._get_selected_templates()
         if not templates:
-            self._status_label.configure(text="No templates found. Save defender templates first.")
+            self._status_label.configure(text="No templates selected. Check at least one.")
             return
 
         self._running = True
         self._run_btn.configure(state="disabled")
         self._progress.configure(mode="indeterminate")
         self._progress.start()
-        self._status_label.configure(text="Running comparison...")
+        self._status_label.configure(
+            text=f"Running comparison against {len(templates)} templates..."
+        )
         self._comparison_data = []
 
         for item in self._tree.get_children():
@@ -136,10 +233,8 @@ class ComparePage(customtkinter.CTkFrame):
             weapon_data_list = [Data(**w) for w in weapons]
 
             comparison_data = []
-            total = len(templates)
 
             for idx, tpl in enumerate(templates):
-                # Build defender from template data
                 defender_dict = {**DEFENDER_DEFAULTS}
                 for k, v in tpl.items():
                     if not k.startswith("_") and k in defender_dict:
@@ -190,7 +285,6 @@ class ComparePage(customtkinter.CTkFrame):
             text=f"Compared against {len(comparison_data)} templates. Click a row for details."
         )
 
-        # Clear detail view
         self._details.configure(state="normal")
         self._details.delete("1.0", "end")
         self._details.insert("1.0", "Click a template row to see per-weapon breakdown.")
@@ -238,7 +332,6 @@ class ComparePage(customtkinter.CTkFrame):
             name = getattr(weapon, "name", None) or f"Weapon {r['id'] + 1}"
             lines.append(f"--- {name} (To Wound: {r['to_wound']}+) ---")
 
-            # Special rules
             sustained = getattr(weapon, "sustained_hits", "0")
             if sustained and sustained != "0":
                 lines.append(f"  Sustained Hits: {r['sustained'] / sims:.2f}")
