@@ -1,0 +1,12 @@
+{
+  "name": "C'tan Shard",
+  "toughness": 11,
+  "save": 3,
+  "invuln": 4,
+  "wounds": 16,
+  "feel_no_pain": 5,
+  "model_count": 1,
+  "plus_save": false,
+  "cover": false,
+  "minus_damage": "Minus One"
+}
