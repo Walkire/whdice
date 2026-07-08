@@ -55,7 +55,7 @@ class ComparePage(customtkinter.CTkFrame):
 
         # Template selector panel
         selector_frame = customtkinter.CTkFrame(self, fg_color="transparent")
-        selector_frame.grid(row=1, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(0, 4))
+        selector_frame.grid(row=1, column=0, sticky="ew", padx=PAGE_PAD_X, pady=(0, 2))
 
         selector_header = customtkinter.CTkFrame(selector_frame, fg_color="transparent")
         selector_header.pack(fill="x")
@@ -81,7 +81,7 @@ class ComparePage(customtkinter.CTkFrame):
         self._select_none_btn.pack(side="right", padx=(4, 0))
 
         self._checkbox_frame = customtkinter.CTkScrollableFrame(
-            selector_frame, height=80,
+            selector_frame, height=50,
         )
         self._checkbox_frame.pack(fill="x", pady=(4, 0))
 
