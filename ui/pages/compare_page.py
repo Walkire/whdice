@@ -121,6 +121,13 @@ class ComparePage(customtkinter.CTkFrame):
 
         self._tree.grid(row=0, column=0, sticky="nsew")
 
+        # Color tags for wipe % effectiveness
+        self._tree.tag_configure("high", background="#2d5a2d", foreground="white")
+        self._tree.tag_configure("medium_high", background="#3d6b3d", foreground="white")
+        self._tree.tag_configure("medium", background="#4a4a2d", foreground="white")
+        self._tree.tag_configure("medium_low", background="#5a3d2d", foreground="white")
+        self._tree.tag_configure("low", background="#5a2d2d", foreground="white")
+
         scrollbar = tk.ttk.Scrollbar(self._tree_frame, orient="vertical", command=self._tree.yview)
         self._tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky="ns")
@@ -271,12 +278,13 @@ class ComparePage(customtkinter.CTkFrame):
             self._tree.delete(item)
 
         for i, row in enumerate(comparison_data):
+            tag = self._wipe_tag(row["wipe_pct"])
             self._tree.insert("", "end", iid=str(i), values=(
                 row["name"],
                 row["avg_kills"],
                 row["avg_damage"],
                 f"{row['wipe_pct']}%",
-            ))
+            ), tags=(tag,))
 
         self._status_label.configure(
             text=f"Compared against {len(comparison_data)} templates. Click a row for details."
