@@ -179,6 +179,7 @@ class AttackerPage(customtkinter.CTkFrame):
             self._panel.set_values(weapon_data)
             self._editing_index = index
             self._set_edit_mode(True)
+            self._highlight_card(index)
 
     def _update_weapon(self) -> None:
         """Save changes back to the weapon being edited."""
@@ -190,11 +191,13 @@ class AttackerPage(customtkinter.CTkFrame):
             self._state._notify()
         self._editing_index = None
         self._set_edit_mode(False)
+        self._clear_highlight()
 
     def _cancel_edit(self) -> None:
         """Cancel editing and restore the attacker state."""
         self._editing_index = None
         self._set_edit_mode(False)
+        self._clear_highlight()
         self._panel.set_values(self._state.attacker)
 
     def _set_edit_mode(self, editing: bool) -> None:
@@ -239,3 +242,14 @@ class AttackerPage(customtkinter.CTkFrame):
         """Called when state changes externally (e.g. undo). Refresh panel and cards."""
         self._panel.set_values(self._state.attacker)
         self._rebuild_cards()
+
+    def _highlight_card(self, index: int) -> None:
+        """Highlight the card at the given index to show it's being edited."""
+        self._clear_highlight()
+        if 0 <= index < len(self._cards):
+            self._cards[index].configure(border_color=("dodgerblue", "dodgerblue"))
+
+    def _clear_highlight(self) -> None:
+        """Remove highlight from all cards."""
+        for card in self._cards:
+            card.configure(border_color=COLOR_BORDER)
