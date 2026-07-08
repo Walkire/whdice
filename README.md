@@ -26,11 +26,9 @@ A desktop GUI tool for simulating Warhammer 40K combat scenarios. Configure atta
 # Install dependencies
 pip install customtkinter matplotlib
 
-# Run the modern UI
+# Run the application
 python app.py
 ```
-
-The legacy Tkinter interface is still available via `python run.py`.
 
 ## Usage
 
