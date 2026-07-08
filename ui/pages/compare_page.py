@@ -368,6 +368,19 @@ class ComparePage(customtkinter.CTkFrame):
 
         return "\n".join(lines)
 
+    def _wipe_tag(self, wipe_pct: float) -> str:
+        """Return a color tag based on wipe percentage."""
+        if wipe_pct >= 75:
+            return "high"
+        elif wipe_pct >= 50:
+            return "medium_high"
+        elif wipe_pct >= 25:
+            return "medium"
+        elif wipe_pct >= 10:
+            return "medium_low"
+        else:
+            return "low"
+
     def _sort_column(self, col: str) -> None:
         """Sort treeview by column (toggle ascending/descending)."""
         data = [(self._tree.set(child, col), child) for child in self._tree.get_children("")]
