@@ -149,6 +149,10 @@ class ComparePage(customtkinter.CTkFrame):
         # Build initial template checkboxes
         self._rebuild_checkboxes()
 
+    def refresh(self) -> None:
+        """Refresh the template checkboxes (called when page becomes visible)."""
+        self._rebuild_checkboxes()
+
     def _rebuild_checkboxes(self) -> None:
         """Rebuild the template toggle checkboxes from disk."""
         # Clear existing

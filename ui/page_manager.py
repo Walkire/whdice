@@ -28,6 +28,11 @@ class PageManager:
                 page.grid_remove()
         self._current_page = name
 
+        # Notify the page it's now visible (for lazy refresh)
+        page = self._pages[name]
+        if hasattr(page, "refresh"):
+            page.refresh()
+
     @property
     def current_page(self) -> str | None:
         """Return the name of the currently visible page."""
