@@ -5,6 +5,7 @@ __pycache__/
 
 # save states
 .warhammer_state.json
+templates/
 
 # C extensions
 *.so
