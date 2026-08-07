@@ -26,7 +26,8 @@ DEFAULTS = {
     "plus_wound": False,
     "plus_hit": False,
     "melta": False,
-    "melta_value": "2"
+    "melta_value": "2",
+    "psychic": False
 }
 
 class Attacker(BaseUnit):
@@ -54,6 +55,7 @@ class Attacker(BaseUnit):
         self.ignore_cover = TinkerBinder(tk.IntVar, value=DEFAULTS['ignore_cover'])
         self.plus_wound = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_wound'])
         self.plus_hit = TinkerBinder(tk.IntVar, value=DEFAULTS['plus_hit'])
+        self.psychic = TinkerBinder(tk.IntVar, value=DEFAULTS['psychic'])
         self.melta = TinkerBinder(tk.IntVar, value=DEFAULTS['melta'])
 
         if not main_frame is None and not mod_frame is None:
@@ -91,8 +93,9 @@ class Attacker(BaseUnit):
             {"label": "Devastating Wounds", "entry": self.devestating_wounds, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Melta", "entry": self.melta, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Ignore Cover", "entry": self.ignore_cover, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
+            {"label": "Psychic", "entry": self.psychic, "type": TkType.CHECKBUTTON, "style": {"sticky": 'w', "padx": 5}},
             {"label": "Critical Hit:", "entry": self.critical_hit, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
-            {"label": "Critical Wound:", "entry": self.critical_wound, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}}
+            {"label": "Critical Wound:", "entry": self.critical_wound, "type": TkType.ENTRY, "style": {"sticky": 'w', "padx": 5}},
         ], self.modifier_frame)
 
     def getValues(self):

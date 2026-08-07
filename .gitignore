@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# save states
+.warhammer_state.json
+templates/
+
 # C extensions
 *.so
 
@@ -180,6 +184,8 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #  you could uncomment the following to ignore the enitre vscode folder
 # .vscode/
+
+.kiro/
 
 # Ruff stuff:
 .ruff_cache/

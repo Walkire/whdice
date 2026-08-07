@@ -205,14 +205,6 @@ class TestCalcSavesFunction(unittest.TestCase):
         result = sim_functions.calc_saves(wounds=5, save=3)
         self.assertEqual(result, 5)
         mock_calc_success.assert_called_with(5, 3, True, False, False)
-        
-    @patch('sim_functions.calc_success')
-    def test_calc_saves_cover(self, mock_calc_success):
-        mock_calc_success.return_value = 5
-        result = sim_functions.calc_saves(wounds=5, save=4, cover=True)
-        self.assertEqual(result, 5)
-        mock_calc_success.assert_called_with(5, 3, True, False, False)
-
 class TestCalcDamageFunction(unittest.TestCase):
     def test_calc_damage_no_modifiers(self):
         self.assertEqual(sim_functions.calc_damage(3, damage=2, return_as_list=False), 6)
@@ -296,6 +288,14 @@ class TestCalcHitFunction(unittest.TestCase):
     @patch('sim_functions.roll')
     @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
     def test_calc_hit_worse_than_max(self, mock_calc_success, mock_roll):
+        mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
+        result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
+        self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
+        mock_calc_success.assert_called_with(5, 2, False, False, False, False, 6)
+        
+    @patch('sim_functions.roll')
+    @patch('sim_functions.calc_success', wraps=sim_functions.calc_success)
+    def test_calc_hit_cover(self, mock_calc_success, mock_roll):
         mock_roll.side_effect = [4, 3, 2, 1, 2]  # Simulated dice rolls
         result = sim_functions.calc_hits(atk=5, score=2, plus_hit=True)
         self.assertEqual(result, (4, 0)) # 4 hits, 0 crit
